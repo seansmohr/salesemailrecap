@@ -76,11 +76,11 @@
     defaultWhy: {
       mapd: 'One plan for your doctors, hospital stays and prescriptions, with a {mapdPremium} monthly premium and a yearly cap on what you pay.',
       medsupp: 'Predictable costs: after the {partBDeductible} Part B deductible, {medsuppCoverage}.',
-      critical: 'A serious diagnosis brings costs no medical plan covers. This puts {ciCash} in your hands to use however you need.',
-      recovery: 'Medicare stops paying for skilled nursing after Day 100 and never pays for assisted living. This pays {recoveryDaily} a day, up to {recoveryMax}, so your savings stay protected.',
-      home: 'If you ever need care, you can recover in your own home instead of a facility, with {homeDaily} a day toward that care.',
-      hospital: "A hospital stay won't turn into a surprise bill. This pays {hospitalDaily} for every day you're admitted.",
-      dvh: "Original Medicare doesn't cover routine dental, vision or hearing. This gives you up to {dvhMax} a year, with no deductible."
+      critical: 'Your health plan only pays what it approves. This puts {ciCash} in your hands for everything else that comes with a diagnosis.',
+      recovery: "Medicare won't approve assisted living or skilled nursing after Day 100. This pays {recoveryDaily} a day, up to {recoveryMax}, so those costs don't come out of your savings.",
+      home: "Medicare approves only limited care at home. This pays {homeDaily} a day so you can recover in your own home without worrying about what isn't approved.",
+      hospital: "A hospital stay leaves you with costs your health plan won't pay. This pays {hospitalDaily} for every day you're admitted to cover them.",
+      dvh: "Medicare doesn't approve routine dental, vision or hearing care. This gives you up to {dvhMax} a year toward those costs, with no deductible."
     }
   };
 

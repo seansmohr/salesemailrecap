@@ -192,3 +192,28 @@ test('critical illness lists non-approved costs matched to the products', () => 
   assert.match(heartOnly.text, /In-home help and caregiving/);
   assert.doesNotMatch(heartOnly.text, /MD Anderson/);
 });
+
+test('every ancillary product lists non-approved costs, with one framing line', () => {
+  const r = buildEmail({
+    prospect: { firstName: 'Bob' }, situation: 't65', main: 'mapd', partBPremium: '202.90',
+    mapd: { carrier: 'Humana', premium: '0' }, anc: products
+  }, config);
+  const preface = r.text.match(/only pays for what it approves/g) || [];
+  assert.equal(preface.length, 1, 'framing line appears once');
+  // framing line sits right before the first ancillary section
+  assert.match(r.text, /only pays for what it approves[^\n]*\n\n3\. CANCER, HEART ATTACK & STROKE COVERAGE/);
+  assert.match(r.text, /Assisted living\*?\*?, which Medicare pays nothing toward/);
+  assert.match(r.text, /Care beyond the limited, part-time visits Medicare approves/);
+  assert.match(r.text, /Your plan’s hospital deductible and daily copays/);
+  assert.match(r.text, /Hearing aids, which Medicare doesn’t cover/);
+  const lists = r.text.match(/costs health insurance won’t approve/g) || [];
+  assert.equal(lists.length, 5, 'CHS, recovery, home, hospital, DVH');
+});
+
+test('no framing line without ancillary; Med Supp hospital list skips deductible', () => {
+  const none = buildEmail(medSupp(), config);
+  assert.doesNotMatch(none.text, /only pays for what it approves/);
+  const ms = buildEmail(medSupp({ anc: { hospital: products.hospital } }), config);
+  assert.doesNotMatch(ms.text, /hospital deductible and daily copays/);
+  assert.match(ms.text, /Bills at home/);
+});

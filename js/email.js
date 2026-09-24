@@ -118,6 +118,21 @@
       return lines.slice(0, 3);
     }
 
+    // Every ancillary product lists costs health insurance won't approve.
+    function notApproved(items, lead) {
+      return {
+        text: lead || 'Covers the **costs health insurance won’t approve**, such as:',
+        sub: items
+      };
+    }
+    var ANC_PREFACE = 'Your health insurance only pays for what it approves. The coverage below is built for everything it won’t, so a diagnosis, hospital stay or recovery doesn’t come out of your savings.';
+    function pushAncillary(section) {
+      var isFirst = !sections.some(function (x) { return x.ancillary; });
+      section.ancillary = true;
+      if (isFirst) section.preface = ANC_PREFACE;
+      sections.push(section);
+    }
+
     // ----- Delaying Medicare (staying on employer coverage) -----
     if (staying) {
       sections.push({
@@ -246,17 +261,14 @@
         notCovered.push('**Home changes after a stroke or heart attack**, like a wheelchair ramp, stair lift or walk-in shower, which can run thousands of dollars');
         notCovered.push('**In-home help and caregiving** while you recover, or a family member taking unpaid time off to care for you');
       }
-      cb.push({
-        text: 'It also covers the **costs health insurance won’t approve** that come with a diagnosis, such as:',
-        sub: notCovered
-      });
+      cb.push(notApproved(notCovered, 'Covers the **costs health insurance won’t approve** that come with a diagnosis, such as:'));
       cb.push(staying
         ? 'Use it however you need: replacing lost income, paying the mortgage and bills, or covering those extra costs'
         : 'Use it however you need, on top of what your health plan pays');
       var total = ciPrem.length > 1 && ciPrem.every(function (x) { return x.n !== null; })
         ? '**Total premium: ' + premiumText(round2(ciPrem[0].n + ciPrem[1].n)) + '/month**'
         : null;
-      sections.push({
+      pushAncillary({
         title: on.cancer && on.heart ? 'Cancer, Heart Attack & Stroke Coverage'
           : on.cancer ? 'Cancer Coverage' : 'Heart Attack & Stroke Coverage',
         intro: staying
@@ -278,14 +290,19 @@
       tokens.recoveryDaily = rDaily.text;
       tokens.recoveryMax = rMax;
       glance.push({ label: 'Recovery Care (' + rDaily.text + '/day)', amount: rPrem.n, text: rPrem.text });
-      sections.push({
+      pushAncillary({
         title: 'Recovery Care: Skilled Nursing & Assisted Living',
-        intro: 'Medicare stops paying for skilled nursing after Day 100 and pays nothing toward assisted living. This coverage picks up where Medicare leaves off.',
+        intro: 'This coverage picks up where Medicare leaves off, for the long-term care it won’t approve.',
         bullets: [
           '**' + rDaily.text + '/day benefit**',
           'Begins Day ' + rc.startDay + ', after Medicare stops paying',
           'Lasts up to ' + rc.consecutiveDays + ' consecutive days or ' + rc.lifetimeDays + ' lifetime days',
-          '**Total coverage: ' + rMin + ' minimum, up to ' + rMax + '**'
+          '**Total coverage: ' + rMin + ' minimum, up to ' + rMax + '**',
+          notApproved([
+            '**Assisted living**, which Medicare pays nothing toward',
+            '**Skilled nursing after Day 100**, when Medicare stops paying',
+            '**Help with bathing, dressing and eating** (custodial care)'
+          ])
         ],
         premium: '**Premium: ' + rPrem.text + '/month**',
         why: whyFor('recovery')
@@ -298,12 +315,15 @@
       var hhPrem = needPremium(anc.home.premium, 'Home Healthcare');
       tokens.homeDaily = hDaily.text;
       glance.push({ label: 'Home Healthcare (' + hDaily.text + '/day)', amount: hhPrem.n, text: hhPrem.text });
-      sections.push({
+      pushAncillary({
         title: 'Home Healthcare: Recover in the Comfort of Your Own Home',
         intro: 'After a hospital stay, surgery or illness, most people heal faster and feel better at home. This coverage pays you a cash benefit for care at home, so you can recover in your own bed, around your family, without worrying about the bill.',
         bullets: [
           '**' + hDaily.text + ' per day of home care**',
-          'Helps pay for nursing visits, therapy and home health aides'
+          notApproved([
+            '**Help with bathing and dressing**, meals and light housekeeping while you recover',
+            '**Care beyond the limited, part-time visits** Medicare approves'
+          ])
         ],
         premium: '**Premium: ' + hhPrem.text + '/month**',
         why: whyFor('home')
@@ -324,13 +344,19 @@
           warnings.push('Heads up: Medicare Supplement plans G and N already pay the skilled nursing copay for Days 21–100, so the SNF rider overlaps. The email still includes it.');
         }
       }
+      var hiCosts = [];
+      // Med Supp G/N already pay the hospital deductible and copays.
+      if (main !== 'medsupp') hiCosts.push('**Your plan’s hospital deductible and daily copays**');
+      hiCosts.push('**Bills at home** that keep coming while you’re in the hospital');
+      hiCosts.push('**Family travel and parking** during your stay');
+      hib.push(notApproved(hiCosts));
       glance.push({
         label: 'Hospital Indemnity (' + hiDaily.text + '/day)' + (snfDaily !== null ? ' + Skilled Nursing rider' : ''),
         amount: hiPrem.n, text: hiPrem.text
       });
-      sections.push({
+      pushAncillary({
         title: 'Hospital Indemnity' + (snfDaily !== null ? ' with Skilled Nursing Rider' : ''),
-        intro: 'Pays you cash when you are admitted to the hospital, to help with the copays and costs that come with a stay.',
+        intro: 'Pays you cash when you are admitted to the hospital, for the costs that come with a stay.',
         bullets: hib,
         premium: '**Premium: ' + hiPrem.text + '/month**',
         why: whyFor('hospital', main === 'mapd'
@@ -345,13 +371,17 @@
       var dPrem = needPremium(anc.dvh.premium, 'Dental/Vision/Hearing');
       tokens.dvhMax = dMax.text;
       glance.push({ label: 'Dental, Vision & Hearing', amount: dPrem.n, text: dPrem.text });
-      sections.push({
+      pushAncillary({
         title: 'Dental, Vision & Hearing',
         bullets: [
           '**Annual maximum: ' + dMax.text + ' per person**',
           'No deductible',
           'Preventive care covered at 100%',
-          'Covers preventive, basic and major services'
+          notApproved([
+            '**Routine dental work**, like cleanings, fillings, crowns and dentures',
+            '**Eye exams and glasses**',
+            '**Hearing aids**, which Medicare doesn’t cover and which often cost thousands'
+          ])
         ],
         premium: '**Premium: ' + dPrem.text + '/month**',
         why: whyFor('dvh')
@@ -522,6 +552,7 @@
     }
 
     m.sections.forEach(function (s, i) {
+      if (s.preface) out.push('<p style="' + FONT + 'margin:30px 0 0;font-size:17px;font-weight:bold;color:' + C.navy + ';">' + inline(s.preface) + '</p>');
       out.push(headingHtml(s.title, i + 1));
       if (s.subtitle) out.push('<p style="' + FONT + 'margin:0 0 10px;color:' + C.muted + ';font-weight:bold;">' + inline(s.subtitle) + '</p>');
       if (s.intro) out.push('<p ' + P + '>' + inline(s.intro) + '</p>');
@@ -585,6 +616,7 @@
       out.push(plain(m.compare.note), '');
     }
     m.sections.forEach(function (s, i) {
+      if (s.preface) out.push(plain(s.preface), '');
       out.push((i + 1) + '. ' + plain(s.title).toUpperCase());
       if (s.subtitle) out.push(plain(s.subtitle));
       if (s.intro) out.push(plain(s.intro));
