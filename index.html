@@ -15,171 +15,108 @@
   <main class="layout">
     <form id="recapForm" class="form" autocomplete="off" novalidate>
 
-      <!-- Agent -->
       <section class="card">
-        <h2>Your info <span class="hint">(remembered on this device)</span></h2>
-        <div class="grid3">
-          <label>Your name<input name="agent.name" placeholder="Your full name"></label>
-          <label>Phone<input name="agent.phone" placeholder="(555) 123-4567"></label>
-          <label>Email<input name="agent.email" type="email" placeholder="you@agency.com"></label>
-        </div>
-      </section>
+        <label>Prospect first name<input name="prospect.firstName" placeholder="e.g. Mary"></label>
 
-      <!-- Prospect & situation -->
-      <section class="card">
-        <h2>Prospect &amp; current situation</h2>
-        <div class="grid2">
-          <label>Prospect first name<input name="prospect.firstName" placeholder="e.g. Mary"></label>
-          <label>Where they are now
-            <select name="situation.status" id="situationStatus"><option value="">Select…</option></select>
-          </label>
+        <div class="field-label">Situation</div>
+        <div class="segmented grid-2x2" role="radiogroup" aria-label="Situation">
+          <label><input type="radio" name="situation" value="t65"><span>Turning 65</span></label>
+          <label><input type="radio" name="situation" value="leavingEmployer"><span>Leaving employer coverage</span></label>
+          <label><input type="radio" name="situation" value="stayingEmployer"><span>Staying on employer coverage</span></label>
+          <label><input type="radio" name="situation" value="onMedicare"><span>Already on Medicare</span></label>
         </div>
-        <fieldset class="concerns">
-          <legend>What they care about <span class="hint">(ticks feed “Why this fits you”)</span></legend>
-          <div id="concernList" class="checklist"></div>
-        </fieldset>
-        <label>In their words <span class="hint">(appears in the email, written to them)</span>
-          <textarea name="situation.notes" rows="2" placeholder="e.g. Your mom battled breast cancer, and you want to keep seeing Dr. Patel."></textarea>
+
+        <div class="panel grid2" data-situation="onMedicare">
+          <label>Current plan<input name="current.plan" placeholder="e.g. Humana Gold Plus HMO"></label>
+          <label>Current monthly premium ($)<input name="current.premium" inputmode="decimal" placeholder="0"></label>
+        </div>
+
+        <label>In their words <span class="hint">optional, appears in the email</span>
+          <textarea name="notes" rows="2" placeholder="e.g. Your mom battled breast cancer, and keeping Dr. Patel matters to you."></textarea>
         </label>
       </section>
 
-      <!-- Main coverage -->
-      <section class="card">
+      <section class="card" data-hide-when-staying>
         <h2>Main coverage</h2>
-        <div class="segmented" role="radiogroup">
+        <div class="segmented" role="radiogroup" aria-label="Main coverage">
           <label><input type="radio" name="main" value="mapd"><span>Medicare Advantage</span></label>
           <label><input type="radio" name="main" value="medsupp" checked><span>Medicare Supplement</span></label>
           <label><input type="radio" name="main" value="ancillary"><span>Ancillary</span></label>
         </div>
 
+        <div class="panel grid3" data-main="mapd">
+          <label>Carrier<input name="mapd.carrier" placeholder="Humana"></label>
+          <label>Plan name<input name="mapd.planName" placeholder="Gold Plus HMO"></label>
+          <label>Premium ($/mo)<input name="mapd.premium" inputmode="decimal" placeholder="0"></label>
+        </div>
+
+        <div class="panel grid3" data-main="medsupp">
+          <label>Plan
+            <select name="medsupp.plan">
+              <option value="G">Plan G</option>
+              <option value="N">Plan N</option>
+            </select>
+          </label>
+          <label>Carrier<input name="medsupp.carrier" placeholder="AFLAC"></label>
+          <label>Premium ($/mo)<input name="medsupp.premium" inputmode="decimal" placeholder="116.16"></label>
+        </div>
+
         <div class="panel" data-main="mapd medsupp">
           <label class="narrow">Part B premium ($/mo)<input name="partBPremium" inputmode="decimal" id="partBPremium"></label>
         </div>
-
-        <div class="panel" data-main="mapd">
-          <div class="grid2">
-            <label>Carrier<input name="mapd.carrier" placeholder="Humana"></label>
-            <label>Plan name<input name="mapd.planName" placeholder="Gold Plus HMO"></label>
-            <label>Monthly premium ($)<input name="mapd.premium" inputmode="decimal" placeholder="0"></label>
-            <label>Max out-of-pocket ($/yr) <span class="hint">optional</span><input name="mapd.moop" inputmode="decimal" placeholder="4900"></label>
-            <label>Primary care copay ($) <span class="hint">optional</span><input name="mapd.pcpCopay" inputmode="decimal"></label>
-            <label>Specialist copay ($) <span class="hint">optional</span><input name="mapd.specialistCopay" inputmode="decimal"></label>
-          </div>
-          <div class="checkrow">
-            <label class="check"><input type="checkbox" name="mapd.includesRx" checked> Includes prescription coverage</label>
-            <label class="check"><input type="checkbox" name="mapd.includesDvh" checked> Includes dental, vision &amp; hearing</label>
-          </div>
-          <label>Why this fits them <span class="hint">optional, your own words</span><input name="mapd.note"></label>
-        </div>
-
-        <div class="panel" data-main="medsupp">
-          <div class="grid2">
-            <label>Plan
-              <select name="medsupp.plan" id="medsuppPlan">
-                <option value="G">Plan G</option>
-                <option value="N">Plan N</option>
-                <option value="other">Other</option>
-              </select>
-            </label>
-            <label>Carrier<input name="medsupp.carrier" placeholder="AFLAC"></label>
-            <label>Monthly premium ($)<input name="medsupp.premium" inputmode="decimal" placeholder="116.16"></label>
-            <label>Application fee ($) <span class="hint">optional</span><input name="medsupp.appFee" inputmode="decimal" placeholder="20"></label>
-          </div>
-          <div class="panel" data-medsupp-other>
-            <label>Plan name<input name="medsupp.otherName" placeholder="High-Deductible Plan G"></label>
-            <label>Key benefits <span class="hint">one per line</span><textarea name="medsupp.otherBenefits" rows="3"></textarea></label>
-          </div>
-          <div class="grid2">
-            <label>Part D plan <span class="hint">optional</span><input name="medsupp.partdPlan" placeholder="Wellcare Value Script"></label>
-            <label>Part D premium ($) <span class="hint">optional</span><input name="medsupp.partdPremium" inputmode="decimal"></label>
-          </div>
-          <label>Why this fits them <span class="hint">optional, your own words</span><input name="medsupp.note"></label>
-        </div>
       </section>
 
-      <!-- Ancillary products -->
       <section class="card">
-        <h2>Ancillary products <span class="hint" id="ancHint">optional</span></h2>
-
-        <div class="product">
-          <label class="product-toggle"><input type="checkbox" name="anc.cancer.on"> Cancer</label>
-          <div class="product-body">
-            <div class="grid2">
-              <label>Benefit amount ($)<input name="anc.cancer.benefit" inputmode="decimal" placeholder="15000"></label>
-              <label>Monthly premium ($)<input name="anc.cancer.premium" inputmode="decimal" placeholder="41.85"></label>
+        <h2>Products</h2>
+        <div class="products">
+          <div class="product" data-product="cancer">
+            <label class="product-toggle"><input type="checkbox" name="anc.cancer.on"> Cancer</label>
+            <div class="product-body grid2">
+              <label>Benefit ($)<input name="anc.cancer.benefit" inputmode="decimal" placeholder="15000"></label>
+              <label>Premium ($/mo)<input name="anc.cancer.premium" inputmode="decimal" placeholder="41.85"></label>
             </div>
-            <label>Why this fits them <span class="hint">optional</span><input name="anc.cancer.note"></label>
           </div>
-        </div>
 
-        <div class="product">
-          <label class="product-toggle"><input type="checkbox" name="anc.heart.on"> Heart Attack &amp; Stroke</label>
-          <div class="product-body">
-            <div class="grid2">
-              <label>Benefit amount ($)<input name="anc.heart.benefit" inputmode="decimal" placeholder="15000"></label>
-              <label>Monthly premium ($)<input name="anc.heart.premium" inputmode="decimal" placeholder="42.65"></label>
+          <div class="product" data-product="heart">
+            <label class="product-toggle"><input type="checkbox" name="anc.heart.on"> Heart Attack &amp; Stroke</label>
+            <div class="product-body grid2">
+              <label>Benefit ($)<input name="anc.heart.benefit" inputmode="decimal" placeholder="15000"></label>
+              <label>Premium ($/mo)<input name="anc.heart.premium" inputmode="decimal" placeholder="42.65"></label>
             </div>
-            <label>Why this fits them <span class="hint">optional</span><input name="anc.heart.note"></label>
           </div>
-        </div>
 
-        <div class="product">
-          <label class="product-toggle"><input type="checkbox" name="anc.recovery.on"> Recovery Care / Skilled Nursing</label>
-          <div class="product-body">
-            <div class="grid2">
+          <div class="product" data-product="recovery" data-hide-when-staying>
+            <label class="product-toggle"><input type="checkbox" name="anc.recovery.on"> Recovery Care</label>
+            <div class="product-body grid2">
               <label>Daily benefit ($)<input name="anc.recovery.daily" inputmode="decimal" placeholder="400"></label>
-              <label>Monthly premium ($)<input name="anc.recovery.premium" inputmode="decimal" placeholder="107.63"></label>
+              <label>Premium ($/mo)<input name="anc.recovery.premium" inputmode="decimal" placeholder="107.63"></label>
+              <p class="calc" data-calc="recovery"></p>
             </div>
-            <p class="calc" data-calc="recovery"></p>
-            <label>Why this fits them <span class="hint">optional</span><input name="anc.recovery.note"></label>
           </div>
-        </div>
 
-        <div class="product">
-          <label class="product-toggle"><input type="checkbox" name="anc.home.on"> Home Healthcare</label>
-          <div class="product-body">
-            <div class="grid2">
+          <div class="product" data-product="home" data-hide-when-staying>
+            <label class="product-toggle"><input type="checkbox" name="anc.home.on"> Home Healthcare</label>
+            <div class="product-body grid2">
               <label>Daily benefit ($)<input name="anc.home.daily" inputmode="decimal" placeholder="150"></label>
-              <label>Max benefit days <span class="hint">optional</span><input name="anc.home.days" inputmode="numeric" placeholder="365"></label>
-              <label>Benefits begin <span class="hint">optional</span><input name="anc.home.waiting" placeholder="Day 1"></label>
-              <label>Monthly premium ($)<input name="anc.home.premium" inputmode="decimal"></label>
+              <label>Premium ($/mo)<input name="anc.home.premium" inputmode="decimal"></label>
             </div>
-            <p class="calc" data-calc="home"></p>
-            <label>Why this fits them <span class="hint">optional</span><input name="anc.home.note"></label>
           </div>
-        </div>
 
-        <div class="product">
-          <label class="product-toggle"><input type="checkbox" name="anc.hospital.on"> Hospital Indemnity</label>
-          <div class="product-body">
-            <div class="grid2">
-              <label>Hospital daily benefit ($)<input name="anc.hospital.daily" inputmode="decimal" placeholder="300"></label>
-              <label>Max days per stay <span class="hint">optional</span><input name="anc.hospital.days" inputmode="numeric"></label>
-              <label>Monthly premium ($)<input name="anc.hospital.premium" inputmode="decimal" placeholder="61.15"></label>
+          <div class="product" data-product="hospital" data-hide-when-staying>
+            <label class="product-toggle"><input type="checkbox" name="anc.hospital.on"> Hospital Indemnity</label>
+            <div class="product-body grid3">
+              <label>Daily benefit ($)<input name="anc.hospital.daily" inputmode="decimal" placeholder="300"></label>
+              <label>SNF daily benefit ($)<input name="anc.hospital.snfDaily" inputmode="decimal" placeholder="150"></label>
+              <label>Premium ($/mo)<input name="anc.hospital.premium" inputmode="decimal" placeholder="61.15"></label>
             </div>
-            <label class="check"><input type="checkbox" name="anc.hospital.snf" checked> Skilled Nursing (SNF) rider</label>
-            <div class="panel" data-snf>
-              <div class="grid2">
-                <label>SNF daily benefit ($)<input name="anc.hospital.snfDaily" inputmode="decimal" placeholder="150"></label>
-                <label>Rider premium ($) <span class="hint">blank = included above</span><input name="anc.hospital.snfPremium" inputmode="decimal"></label>
-                <label>Covered from day<input name="anc.hospital.snfStart" inputmode="numeric" id="snfStart"></label>
-                <label>Through day<input name="anc.hospital.snfEnd" inputmode="numeric" id="snfEnd"></label>
-              </div>
-            </div>
-            <label>Why this fits them <span class="hint">optional</span><input name="anc.hospital.note"></label>
           </div>
-        </div>
 
-        <div class="product">
-          <label class="product-toggle"><input type="checkbox" name="anc.dvh.on"> Dental, Vision &amp; Hearing</label>
-          <div class="product-body">
-            <div class="grid2">
-              <label>Carrier / network<input name="anc.dvh.carrier" placeholder="Aetna through the Careington network"></label>
-              <label>Annual max per person ($)<input name="anc.dvh.annualMax" inputmode="decimal" placeholder="5000"></label>
-              <label>Monthly premium ($)<input name="anc.dvh.premium" inputmode="decimal" placeholder="62.13"></label>
-              <label>Provider search link <span class="hint">optional</span><input name="anc.dvh.link" type="url" placeholder="https://…"></label>
+          <div class="product" data-product="dvh" data-hide-when-staying>
+            <label class="product-toggle"><input type="checkbox" name="anc.dvh.on"> Dental, Vision &amp; Hearing</label>
+            <div class="product-body grid2">
+              <label>Annual max ($)<input name="anc.dvh.annualMax" inputmode="decimal" placeholder="5000"></label>
+              <label>Premium ($/mo)<input name="anc.dvh.premium" inputmode="decimal" placeholder="62.13"></label>
             </div>
-            <label>Why this fits them <span class="hint">optional</span><input name="anc.dvh.note"></label>
           </div>
         </div>
       </section>

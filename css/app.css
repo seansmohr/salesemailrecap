@@ -13,6 +13,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 
 body {
   margin: 0;
@@ -76,11 +77,6 @@ textarea { resize: vertical; }
 .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 12px; }
 .checkrow { display: flex; flex-wrap: wrap; gap: 4px 18px; }
 
-.concerns { border: 0; padding: 0; margin: 0 0 10px; }
-.concerns legend { font-size: 13.5px; font-weight: 600; padding: 0; margin-bottom: 6px; }
-.checklist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 12px; }
-.checklist label { flex-direction: row; align-items: flex-start; gap: 8px; font-weight: normal; margin: 0; padding: 5px 0; }
-.checklist input { margin-top: 3px; }
 
 .segmented { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
 .segmented label { flex: 1 1 140px; margin: 0; }
@@ -97,13 +93,11 @@ textarea { resize: vertical; }
 .segmented input:checked + span { background: var(--navy); color: #fff; border-color: var(--navy); }
 .segmented input:focus-visible + span { outline: 2px solid var(--navy); outline-offset: 2px; }
 
-.panel[hidden] { display: none; }
 
 .product { border-top: 1px solid var(--line); padding: 10px 0 2px; }
 .product:first-of-type { border-top: 0; padding-top: 0; }
 .product-toggle { font-size: 15px; margin-bottom: 8px; cursor: pointer; }
 .product-body { padding-left: 24px; }
-.product-body[hidden] { display: none; }
 .calc { margin: -4px 0 10px; font-size: 13px; color: var(--accent); font-weight: 600; }
 .calc:empty { display: none; }
 
@@ -167,7 +161,19 @@ textarea { resize: vertical; }
 }
 
 @media (max-width: 600px) {
-  .grid2, .grid3, .checklist { grid-template-columns: 1fr; }
+  .grid2, .grid3 { grid-template-columns: 1fr; }
   .preview { padding: 16px; }
   .topbar { padding: 12px 16px; }
+}
+
+/* Simplified layout additions */
+.field-label { font-size: 13.5px; font-weight: 600; margin-bottom: 6px; }
+.segmented.grid-2x2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.segmented.grid-2x2 label { flex: none; }
+.segmented span { height: 100%; display: flex; align-items: center; justify-content: center; }
+.product-body.grid2, .product-body.grid3 { display: grid; }
+.product-body .calc { grid-column: 1 / -1; margin-top: -4px; }
+.panel.grid2, .panel.grid3 { display: grid; }
+@media (max-width: 600px) {
+  .segmented.grid-2x2 { grid-template-columns: 1fr 1fr; }
 }

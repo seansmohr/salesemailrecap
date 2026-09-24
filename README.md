@@ -9,30 +9,30 @@ and walk through it line by line with the prospect on the phone.
 ## How to use it
 
 1. Open the Railway link (see below), or open `index.html` directly in a browser.
-2. Fill in **Your info** once. It's remembered on that computer.
-3. Enter the **prospect's first name**, **where they are now**, what they
-   **care about**, and anything **in their words**.
-4. Pick the **main coverage**: Medicare Advantage, Medicare Supplement, or Ancillary.
-5. Tick any **ancillary products** and enter the benefit amounts and premiums:
-   Cancer, Heart Attack & Stroke, Recovery Care, Home Healthcare,
-   Hospital Indemnity (with Skilled Nursing rider), Dental/Vision/Hearing.
-6. Check the yellow warnings, then click **Copy Email** and paste it into a new
-   message. **Copy Subject** copies the subject line.
-7. Click **New Prospect** to clear the form (your agent info stays).
+2. Enter the **prospect's first name** and pick their **situation**:
+   Turning 65, Leaving employer coverage, Staying on employer coverage, or Already on Medicare.
+3. Optionally add a line **in their words** (it appears in the email).
+4. Pick the **main coverage** (Medicare Advantage, Medicare Supplement or Ancillary)
+   and tick the **products** pitched, with benefit amounts and premiums.
+5. Check the yellow warnings, click **Copy Email**, and paste it into a new message
+   above your signature. **Copy Subject** copies the subject line.
+6. Click **New Prospect** to clear the form.
 
 The form autosaves on the device, so a page refresh mid-call won't lose anything.
+The email ends with "Best regards," so your own email signature follows it.
 
-## Email combinations
+## What each situation produces
 
-| Main coverage | Ancillary ticked | Email |
+| Situation | Form shows | Email |
 |---|---|---|
-| Medicare Advantage | none / some | Parts A & B → MAPD → ancillary sections |
-| Medicare Supplement | none / some | Parts A & B → Med Supp → Part D → ancillary sections |
-| Ancillary | at least one | Ancillary sections only (no Part B, no Medicare disclaimer) |
+| Turning 65 | Main coverage + all products | Parts A & B, main plan, products |
+| Leaving employer coverage | Main coverage + all products | Same, written for coming off an employer plan |
+| Staying on employer coverage | Cancer and Heart Attack & Stroke only | "Delaying Medicare" steps (Form CMS-L564 → HR → submit with the Part A & B application), then critical illness coverage framed around protecting income |
+| Already on Medicare | Current plan + premium, main coverage + products | Adds a "What You Have Now vs. What We Recommend" table |
 
-Every email has: greeting, **Your Coverage at a Glance** (premiums + totals),
-**Where You Are Today**, numbered product sections with a **Why this fits you**
-box, a closing, and your signature.
+Every email has **Your Coverage at a Glance** (premiums and totals), **Where You Are Today**,
+and numbered product sections with a **Why this fits you** box. The Medicare disclaimer is
+added when a Medicare Advantage or Medicare Supplement plan is included.
 
 ## Updating figures and wording
 
@@ -40,12 +40,13 @@ Everything an admin is likely to change lives in **`js/config.js`**:
 
 - `partBPremium`, `partBDeductible`: update each year
 - `recoveryCare`: benefit start day and consecutive/lifetime days
-- `hospitalSnf`: default SNF rider days (21–100)
+- `hospitalSnf`: SNF rider days (21–100)
+- `cmsL564Url`: link to Form CMS-L564
 - `disclaimer`: **fill in `organizations` and `plans`** (the page warns until you do);
   have your compliance contact confirm the wording
-- `situations`: the "Where they are now" options and the sentence each one writes
-- `concerns`: the checkboxes, the sentence written under "Where You Are Today",
-  and the "Why this fits you" sentence for each product (`ties`)
+- `situations`: the "Where You Are Today" paragraph and situation-specific
+  "Why this fits you" lines
+- `defaultWhy`: the standard "Why this fits you" line for each product
 
 Product wording (bullets, section intros) lives in `js/email.js`.
 

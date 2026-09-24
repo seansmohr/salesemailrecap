@@ -7,8 +7,7 @@
   'use strict';
 
   var cfg = window.RECAP_CONFIG;
-  var DRAFT_KEY = 'recapDraft.v1';
-  var AGENT_KEY = 'recapAgent.v1';
+  var DRAFT_KEY = 'recapDraft.v2';
 
   var form = document.getElementById('recapForm');
   var previewEl = document.getElementById('preview');
@@ -17,33 +16,8 @@
   var copyStatus = document.getElementById('copyStatus');
   var current = { subject: '', html: '', text: '', warnings: [] };
 
-  // ---------- build config-driven controls ----------
-
-  var statusSelect = document.getElementById('situationStatus');
-  cfg.situations.forEach(function (s) {
-    var o = document.createElement('option');
-    o.value = s.key;
-    o.textContent = s.label;
-    statusSelect.appendChild(o);
-  });
-
-  var concernList = document.getElementById('concernList');
-  cfg.concerns.forEach(function (c) {
-    var label = document.createElement('label');
-    var box = document.createElement('input');
-    box.type = 'checkbox';
-    box.name = 'situation.concerns';
-    box.value = c.key;
-    box.setAttribute('data-array', '');
-    label.appendChild(box);
-    label.appendChild(document.createTextNode(' ' + c.label));
-    concernList.appendChild(label);
-  });
-
-  // Defaults from config (defaultValue so form.reset() restores them).
+  // Default from config (defaultValue so form.reset() restores it).
   document.getElementById('partBPremium').defaultValue = cfg.partBPremium.toFixed(2);
-  document.getElementById('snfStart').defaultValue = cfg.hospitalSnf.startDay;
-  document.getElementById('snfEnd').defaultValue = cfg.hospitalSnf.endDay;
 
   // ---------- form <-> object ----------
 
@@ -62,29 +36,18 @@
   function readForm() {
     var data = {};
     Array.prototype.forEach.call(form.querySelectorAll('[name]'), function (el) {
-      var name = el.name;
-      if (el.hasAttribute('data-array')) {
-        var arr = getPath(data, name) || [];
-        if (el.checked) arr.push(el.value);
-        setPath(data, name, arr);
-      } else if (el.type === 'checkbox') {
-        setPath(data, name, el.checked);
-      } else if (el.type === 'radio') {
-        if (el.checked) setPath(data, name, el.value);
-      } else {
-        setPath(data, name, el.value);
-      }
+      if (el.type === 'checkbox') setPath(data, el.name, el.checked);
+      else if (el.type === 'radio') { if (el.checked) setPath(data, el.name, el.value); }
+      else setPath(data, el.name, el.value);
     });
     return data;
   }
 
-  function writeForm(data, onlyPrefix) {
+  function writeForm(data) {
     Array.prototype.forEach.call(form.querySelectorAll('[name]'), function (el) {
-      if (onlyPrefix && el.name.indexOf(onlyPrefix) !== 0) return;
       var v = getPath(data, el.name);
       if (v === undefined) return;
-      if (el.hasAttribute('data-array')) el.checked = Array.isArray(v) && v.indexOf(el.value) >= 0;
-      else if (el.type === 'checkbox') el.checked = !!v;
+      if (el.type === 'checkbox') el.checked = !!v;
       else if (el.type === 'radio') el.checked = el.value === v;
       else el.value = v;
     });
@@ -104,30 +67,27 @@
 
   // ---------- visibility ----------
 
+  function each(selector, fn) {
+    Array.prototype.forEach.call(document.querySelectorAll(selector), fn);
+  }
+
   function updateVisibility(data) {
-    var main = data.main;
-    Array.prototype.forEach.call(document.querySelectorAll('[data-main]'), function (p) {
-      p.hidden = p.getAttribute('data-main').split(' ').indexOf(main) < 0;
+    var staying = data.situation === 'stayingEmployer';
+    each('[data-situation]', function (p) {
+      p.hidden = p.getAttribute('data-situation') !== data.situation;
     });
-    document.querySelector('[data-medsupp-other]').hidden = getPath(data, 'medsupp.plan') !== 'other';
-    document.querySelector('[data-snf]').hidden = !getPath(data, 'anc.hospital.snf');
-    Array.prototype.forEach.call(document.querySelectorAll('.product'), function (p) {
+    each('[data-hide-when-staying]', function (p) { p.hidden = staying; });
+    each('[data-main]', function (p) {
+      p.hidden = p.getAttribute('data-main').split(' ').indexOf(data.main) < 0;
+    });
+    each('.product', function (p) {
       p.querySelector('.product-body').hidden = !p.querySelector('.product-toggle input').checked;
     });
-    document.getElementById('ancHint').textContent =
-      main === 'ancillary' ? 'tick at least one' : 'optional, adds to the main plan';
 
-    // Helper totals shown to the agent
     var money = window.RecapEmail._money;
-    var num = window.RecapEmail._num;
-    var rDaily = num(getPath(data, 'anc.recovery.daily'));
+    var rDaily = window.RecapEmail._num(getPath(data, 'anc.recovery.daily'));
     document.querySelector('[data-calc="recovery"]').textContent = rDaily
       ? 'Total coverage: ' + money(rDaily * cfg.recoveryCare.consecutiveDays) + ' minimum, up to ' + money(rDaily * cfg.recoveryCare.lifetimeDays)
-      : '';
-    var hDaily = num(getPath(data, 'anc.home.daily'));
-    var hDays = num(getPath(data, 'anc.home.days'));
-    document.querySelector('[data-calc="home"]').textContent = hDaily && hDays
-      ? 'Total benefit: ' + money(hDaily * hDays)
       : '';
   }
 
@@ -146,8 +106,6 @@
       warningsEl.appendChild(li);
     });
     save(DRAFT_KEY, data);
-    save(AGENT_KEY, data.agent);
-    copyStatus.textContent = '';
   }
 
   // ---------- copy ----------
@@ -192,7 +150,7 @@
       return;
     }
     copyRich(current.html, current.text, previewEl).then(function (ok) {
-      flash(ok ? 'Copied! Paste it into your email.' : 'Copy failed. Select the preview and copy manually.');
+      flash(ok ? 'Copied! Paste it into your email above your signature.' : 'Copy failed. Select the preview and copy manually.');
     });
   });
 
@@ -208,10 +166,8 @@
   });
 
   document.getElementById('newProspect').addEventListener('click', function () {
-    if (!window.confirm('Clear this prospect and start a new recap? Your agent info is kept.')) return;
-    var agent = readForm().agent;
+    if (!window.confirm('Clear this prospect and start a new recap?')) return;
     form.reset();
-    writeForm({ agent: agent }, 'agent.');
     remove(DRAFT_KEY);
     render();
     window.scrollTo(0, 0);
@@ -222,9 +178,9 @@
 
   // ---------- start ----------
 
+  remove('recapDraft.v1');
+  remove('recapAgent.v1');
   var draft = load(DRAFT_KEY);
   if (draft) writeForm(draft);
-  var agent = load(AGENT_KEY);
-  if (agent) writeForm({ agent: agent }, 'agent.');
   render();
 })();
