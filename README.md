@@ -8,7 +8,7 @@ and walk through it line by line with the prospect on the phone.
 
 ## How to use it
 
-1. Open `index.html` in a browser (double-click it, or host the folder on GitHub Pages).
+1. Open the Railway link (see below), or open `index.html` directly in a browser.
 2. Fill in **Your info** once. It's remembered on that computer.
 3. Enter the **prospect's first name**, **where they are now**, what they
    **care about**, and anything **in their words**.
@@ -49,9 +49,20 @@ Everything an admin is likely to change lives in **`js/config.js`**:
 
 Product wording (bullets, section intros) lives in `js/email.js`.
 
+## Deploying on Railway
+
+1. In Railway: **New Project → Deploy from GitHub repo →** `seansmohr/salesemailrecap`, branch `main`.
+2. No settings needed: Railway detects Node and runs `npm start` (`server.js`), which serves the page on `$PORT`.
+3. Under **Settings → Networking**, click **Generate Domain** to get the link for your agents.
+4. Optional: set the healthcheck path to `/health`.
+
+Every push to `main` redeploys automatically. The server has no dependencies and serves only
+`index.html`, `css/` and `js/`.
+
 ## Development
 
-No build step and no dependencies. Tests use Node's built-in runner:
+No build step and no dependencies. Run locally with `npm start` (http://localhost:3000).
+Tests use Node's built-in runner:
 
 ```
 npm test

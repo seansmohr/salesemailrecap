@@ -4,6 +4,10 @@
   "private": true,
   "description": "Generates prospect recap emails for Medicare Advantage, Medicare Supplement and ancillary coverage.",
   "scripts": {
+    "start": "node server.js",
     "test": "node --test tests/*.test.js"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }
