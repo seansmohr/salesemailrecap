@@ -227,3 +227,9 @@ test('disclaimer counts left blank produce a warning', () => {
   const r = buildEmail(medSupp(), baseConfig);
   assert.ok(r.warnings.some((w) => /Disclaimer/.test(w)));
 });
+
+test('Recovery Care is never described as long-term care', () => {
+  const r = buildEmail(medSupp({ anc: { recovery: products.recovery } }), config);
+  assert.doesNotMatch(r.text, /long[- ]term/i);
+  assert.match(r.text, /Why this fits you: If your recovery takes longer than Medicare covers/);
+});

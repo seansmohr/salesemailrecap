@@ -78,7 +78,7 @@
       mapd: 'One plan for doctors, hospital and prescriptions, with a yearly cap on what you pay.',
       medsupp: 'Predictable costs: after the {partBDeductible} Part B deductible, {medsuppCoverage}.',
       critical: 'If a diagnosis ever comes, {ciCash} lands in your hands to use however you need.',
-      recovery: 'Long-term care costs never come out of your savings.',
+      recovery: "If your recovery takes longer than Medicare covers, the cost won't come out of your savings.",
       home: 'You recover at home instead of a facility, without worrying about the bill.',
       hospital: "A hospital stay won't turn into a surprise bill.",
       dvh: "Routine care you'll actually use, with no deductible."
