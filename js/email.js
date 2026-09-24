@@ -236,9 +236,23 @@
         tokens.ciCash = 'a ' + (cBen || hBen).text + ' cash benefit';
       }
       cb.push('Pays a **lump-sum cash benefit upon diagnosis**, paid directly to you');
+      // Costs health insurance won't approve, matched to the products pitched.
+      var notCovered = [];
+      if (on.cancer) {
+        notCovered.push('**Travel and lodging** for treatment at a top cancer center like MD Anderson or Mayo Clinic, often for weeks at a time');
+        notCovered.push('**Treatments your plan won’t approve**, such as experimental, clinical-trial or out-of-network care');
+      }
+      if (on.heart) {
+        notCovered.push('**Home changes after a stroke or heart attack**, like a wheelchair ramp, stair lift or walk-in shower, which can run thousands of dollars');
+        notCovered.push('**In-home help and caregiving** while you recover, or a family member taking unpaid time off to care for you');
+      }
+      cb.push({
+        text: 'It also covers the **costs health insurance won’t approve** that come with a diagnosis, such as:',
+        sub: notCovered
+      });
       cb.push(staying
-        ? 'Use it however you need: replacing lost income, paying the mortgage and bills, or covering treatment costs'
-        : 'Use it however you need: treatment, medications, travel for care, or everyday bills');
+        ? 'Use it however you need: replacing lost income, paying the mortgage and bills, or covering those extra costs'
+        : 'Use it however you need, on top of what your health plan pays');
       var total = ciPrem.length > 1 && ciPrem.every(function (x) { return x.n !== null; })
         ? '**Total premium: ' + premiumText(round2(ciPrem[0].n + ciPrem[1].n)) + '/month**'
         : null;
@@ -247,7 +261,7 @@
           : on.cancer ? 'Cancer Coverage' : 'Heart Attack & Stroke Coverage',
         intro: staying
           ? 'A critical illness can keep you out of work for months. Your health plan pays the medical bills, but not your mortgage, your utilities or your groceries.'
-          : 'Even with great medical coverage, a serious diagnosis brings costs Medicare doesn’t touch: expensive medications, non-covered treatments, travel and lodging for care, and changes to daily life.',
+          : 'Even with great medical coverage, a serious diagnosis brings costs your health plan won’t pay for, and they add up fast.',
         bullets: cb,
         premium: total,
         why: whyFor('critical')

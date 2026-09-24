@@ -177,3 +177,18 @@ test('disclaimer counts left blank produce a warning', () => {
   const r = buildEmail(medSupp(), baseConfig);
   assert.ok(r.warnings.some((w) => /Disclaimer/.test(w)));
 });
+
+test('critical illness lists non-approved costs matched to the products', () => {
+  const both = buildEmail(medSupp({ anc: { cancer: products.cancer, heart: products.heart } }), config);
+  assert.match(both.text, /costs health insurance won’t approve that come with a diagnosis, such as:/);
+  assert.match(both.text, /MD Anderson or Mayo Clinic/);
+  assert.match(both.text, /wheelchair ramp, stair lift or walk-in shower/);
+
+  const cancerOnly = buildEmail(medSupp({ anc: { cancer: products.cancer } }), config);
+  assert.match(cancerOnly.text, /experimental, clinical-trial or out-of-network care/);
+  assert.doesNotMatch(cancerOnly.text, /stair lift/);
+
+  const heartOnly = buildEmail(medSupp({ anc: { heart: products.heart } }), config);
+  assert.match(heartOnly.text, /In-home help and caregiving/);
+  assert.doesNotMatch(heartOnly.text, /MD Anderson/);
+});
