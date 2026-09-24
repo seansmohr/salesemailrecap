@@ -37,8 +37,11 @@ test('T65 Med Supp Plan N matches the template totals', () => {
   const { cancer, heart, recovery, dvh } = products;
   const r = buildEmail(medSupp({ anc: { cancer, heart, recovery, dvh } }), config);
   // 116.16 + 41.85 + 42.65 + 107.63 + 62.13 = 370.42 (the template's total)
-  assert.match(r.text, /Total for the plans above: \$370\.42\/mo/);
-  assert.match(r.text, /All-in monthly cost: \$573\.32\/mo/);
+  assert.match(r.text, /- Medicare Part B: \$202\.90\/mo \(Covers 80% of doctor costs\)/);
+  assert.match(r.text, /- Cancer: \$41\.85\/mo \(\$15,000 cash if diagnosed\)/);
+  assert.match(r.text, /Total monthly cost: \$573\.32\/mo/);
+  assert.equal((r.text.match(/Total monthly cost/g) || []).length, 1, 'only one total');
+  assert.match(r.text, /\$202\.90 comes out of your Social Security check\. The other \$370\.42 is paid to your insurance companies\./);
   assert.match(r.text, /2\. YOUR MEDICARE SUPPLEMENT: PLAN N \(\$116\.16\/mo\)/);
   assert.match(r.text, /except up to \$20 office copays, \$50 ER copays and rare Part B excess charges/);
   assert.match(r.text, /That’s the gap your Medicare Supplement covers/);
@@ -122,7 +125,8 @@ test('Staying on employer: delaying Medicare steps + critical illness only', () 
   assert.doesNotMatch(r.text, /MEDICARE PARTS A & B|MEDICARE ADVANTAGE|RECOVERY CARE|HOSPITAL INDEMNITY|DENTAL/);
   assert.doesNotMatch(r.text, /Part B premium/);
   assert.doesNotMatch(r.text, /We do not offer every plan/);
-  assert.match(r.text, /Your total monthly premium: \$84\.50\/mo/);
+  assert.match(r.text, /Total monthly cost: \$84\.50\/mo/);
+  assert.doesNotMatch(r.text, /Social Security check/);
   assert.equal(r.subject, 'Tom, your coverage recap');
   assert.deepEqual(r.warnings, []);
 });
@@ -176,7 +180,7 @@ test('Already on Medicare: comparison table (switching plans)', () => {
   }), config);
   assert.match(r.text, /WHAT YOU HAVE NOW VS\. WHAT WE RECOMMEND/);
   assert.match(r.text, /Medical plan: now Humana Gold Plus HMO \| recommended Medicare Supplement Plan N \(AFLAC\)/);
-  assert.match(r.text, /Added protection: now None \| recommended Cancer \(\$15,000\)/);
+  assert.match(r.text, /Added protection: now None \| recommended Cancer\n/);
   assert.match(r.text, /Monthly premium: now \$0\/mo \| recommended \$158\.01\/mo/);
   assert.match(r.text, /Unlike what you have now/);
   assert.equal(r.subject, 'Mary, your Medicare coverage review');
@@ -209,7 +213,7 @@ test('missing situation, numbers and products produce warnings', () => {
   const r2 = buildEmail(medSupp({ medsupp: { plan: 'G' }, anc: { cancer: { on: true } } }), config);
   assert.ok(r2.warnings.some((w) => /Medicare Supplement: enter the monthly premium/.test(w)));
   assert.ok(r2.warnings.some((w) => /Cancer: enter the benefit amount/.test(w)));
-  assert.match(r2.text, /Total for the plans above: \[total\]/);
+  assert.match(r2.text, /Total monthly cost: \[total\]/);
   assert.match(r2.html, /background:#fff3b0/);
 });
 

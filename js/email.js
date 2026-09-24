@@ -105,7 +105,7 @@
 
     var deductibleText = money(cfg.partBDeductible);
     var tokens = { partBDeductible: deductibleText };
-    var glance = [];      // { label, amount (number|null), text }
+    var glance = [];      // { label, detail, amount (number|null), text }
     var sections = [];    // numbered sections
     var mainLabel = '';
 
@@ -164,7 +164,7 @@
       var planLabel = [str(m.carrier), str(m.planName)].filter(Boolean).join(' – ');
       if (!planLabel) warnings.push('Medicare Advantage: enter the carrier or plan name.');
       mainLabel = 'Medicare Advantage' + (planLabel ? ' (' + planLabel + ')' : '');
-      glance.push({ label: mainLabel, amount: mPrem.n, text: mPrem.text });
+      glance.push({ label: mainLabel, detail: 'Your doctor and hospital coverage', amount: mPrem.n, text: mPrem.text });
       sections.push({
         title: 'Your Medicare Advantage Plan',
         price: mPrem.text,
@@ -189,7 +189,13 @@
         ? 'Plan G pays the rest of your approved costs'
         : 'Plan N covers your approved costs aside from small copays';
       mainLabel = 'Medicare Supplement Plan ' + letter + (carrier ? ' (' + carrier + ')' : '');
-      glance.push({ label: mainLabel, amount: sPrem.n, text: sPrem.text });
+      glance.push({
+        label: mainLabel,
+        detail: letter === 'G'
+          ? 'Pays the rest of your approved costs after the ' + deductibleText + ' deductible'
+          : 'Pays your approved costs after the ' + deductibleText + ' deductible, minus small copays',
+        amount: sPrem.n, text: sPrem.text
+      });
       sections.push({
         title: 'Your Medicare Supplement: Plan ' + letter,
         price: sPrem.text,
@@ -212,13 +218,13 @@
       if (on.cancer) {
         cBen = need(anc.cancer.benefit, money, 'benefit', 'Cancer: enter the benefit amount.');
         var cPrem = needPremium(anc.cancer.premium, 'Cancer');
-        glance.push({ label: 'Cancer (' + cBen.text + ')', amount: cPrem.n, text: cPrem.text });
+        glance.push({ label: 'Cancer', detail: cBen.text + ' cash if diagnosed', amount: cPrem.n, text: cPrem.text });
         ciPrem.push(cPrem);
       }
       if (on.heart) {
         hBen = need(anc.heart.benefit, money, 'benefit', 'Heart Attack & Stroke: enter the benefit amount.');
         var hPrem = needPremium(anc.heart.premium, 'Heart Attack & Stroke');
-        glance.push({ label: 'Heart Attack & Stroke (' + hBen.text + ')', amount: hPrem.n, text: hPrem.text });
+        glance.push({ label: 'Heart Attack & Stroke', detail: hBen.text + ' cash if diagnosed', amount: hPrem.n, text: hPrem.text });
         ciPrem.push(hPrem);
       }
       var lead;
@@ -257,7 +263,7 @@
       var rDaily = need(anc.recovery.daily, money, 'daily benefit', 'Recovery Care: enter the daily benefit.');
       var rPrem = needPremium(anc.recovery.premium, 'Recovery Care');
       var rMax = rDaily.n !== null ? money(rDaily.n * rc.lifetimeDays) : placeholder('total');
-      glance.push({ label: 'Recovery Care (' + rDaily.text + '/day)', amount: rPrem.n, text: rPrem.text });
+      glance.push({ label: 'Recovery Care', detail: rDaily.text + '/day once Medicare stops paying', amount: rPrem.n, text: rPrem.text });
       pushAncillary({
         title: 'Recovery Care',
         price: rPrem.text,
@@ -274,7 +280,7 @@
     if (on.home) {
       var hDaily = need(anc.home.daily, money, 'daily benefit', 'Home Healthcare: enter the daily benefit.');
       var hhPrem = needPremium(anc.home.premium, 'Home Healthcare');
-      glance.push({ label: 'Home Healthcare (' + hDaily.text + '/day)', amount: hhPrem.n, text: hhPrem.text });
+      glance.push({ label: 'Home Healthcare', detail: hDaily.text + '/day for care at home', amount: hhPrem.n, text: hhPrem.text });
       pushAncillary({
         title: 'Home Healthcare',
         price: hhPrem.text,
@@ -305,7 +311,8 @@
         ? 'Pays for **bills at home** that keep coming while you’re in the hospital'
         : 'Pays for your plan’s **hospital deductible and daily copays**');
       glance.push({
-        label: 'Hospital Indemnity (' + hiDaily.text + '/day)' + (snfDaily !== null ? ' + Skilled Nursing rider' : ''),
+        label: 'Hospital Indemnity',
+        detail: hiDaily.text + '/day in the hospital' + (snfDaily !== null ? ', ' + money(snfDaily) + '/day in skilled nursing' : ''),
         amount: hiPrem.n, text: hiPrem.text
       });
       pushAncillary({
@@ -323,7 +330,7 @@
     if (on.dvh) {
       var dMax = need(anc.dvh.annualMax, money, 'annual max', 'Dental/Vision/Hearing: enter the annual maximum.');
       var dPrem = needPremium(anc.dvh.premium, 'Dental/Vision/Hearing');
-      glance.push({ label: 'Dental, Vision & Hearing', amount: dPrem.n, text: dPrem.text });
+      glance.push({ label: 'Dental, Vision & Hearing', detail: 'Up to ' + dMax.text + '/year, no deductible', amount: dPrem.n, text: dPrem.text });
       pushAncillary({
         title: 'Dental, Vision & Hearing',
         price: dPrem.text,
@@ -337,14 +344,27 @@
     }
 
     // ----- At a glance -----
+    // One total. Part B is listed as a normal row (first), and a note
+    // under the total splits it into Social Security vs. carriers.
     var allKnown = glance.every(function (g) { return g.amount !== null; });
     var total = allKnown ? round2(glance.reduce(function (a, g) { return a + g.amount; }, 0)) : null;
-    var glanceBlock = glance.length ? {
-      rows: glance,
-      totalText: total !== null ? premiumText(total) : placeholder('total'),
-      partBText: partB ? partB.text : null,
-      allInText: partB ? (total !== null && partB.n !== null ? premiumText(round2(total + partB.n)) : placeholder('total')) : null
-    } : null;
+    var glanceBlock = null;
+    if (glance.length) {
+      var rows = glance.slice();
+      var grand = total;
+      var note = null;
+      if (partB) {
+        rows.unshift({ label: 'Medicare Part B', detail: 'Covers 80% of doctor costs', text: partB.text });
+        grand = total !== null && partB.n !== null ? round2(total + partB.n) : null;
+        note = partB.text + ' comes out of your Social Security check. The other ' +
+          (total !== null ? premiumText(total) : placeholder('total')) + ' is paid to your insurance companies.';
+      }
+      glanceBlock = {
+        rows: rows,
+        totalText: grand !== null ? premiumText(grand) : placeholder('total'),
+        note: note
+      };
+    }
 
     // ----- What you have now vs. what we recommend (already on Medicare) -----
     var compare = null;
@@ -467,22 +487,19 @@
 
     if (m.glance) {
       var g = m.glance;
-      var money = 'white-space:nowrap;text-align:right;';
-      var totalRow = function (label, value, strong) {
-        var st = cell + 'background:' + C.soft + ';' + (strong ? 'font-weight:bold;font-size:17px;' : '');
-        return '<tr><td style="' + st + '">' + inline(label) + '</td><td align="right" style="' + st + money + '">' + inline(value) + '/mo</td></tr>';
-      };
-      var tbl = tableOpen('22px 0 8px') + titleRow('Your Coverage at a Glance', 2) +
+      var amt = 'white-space:nowrap;text-align:right;vertical-align:top;';
+      var tbl = tableOpen('22px 0 6px') + titleRow('Your Coverage at a Glance', 2) +
         g.rows.map(function (r) {
-          return '<tr><td style="' + cell + '">' + inline(r.label) + '</td><td align="right" style="' + cell + money + '">' + inline(r.text) + '/mo</td></tr>';
+          return '<tr><td style="' + cell + '">' +
+            '<div style="font-weight:bold;">' + inline(r.label) + '</div>' +
+            (r.detail ? '<div style="font-size:14px;color:' + C.muted + ';">' + inline(r.detail) + '</div>' : '') +
+            '</td><td align="right" style="' + cell + amt + 'font-weight:bold;">' + inline(r.text) + '/mo</td></tr>';
         }).join('') +
-        totalRow(g.partBText ? 'Total for the plans above' : 'Your total monthly premium', g.totalText, !g.partBText);
-      if (g.partBText) {
-        tbl += '<tr><td style="' + cell + 'color:' + C.muted + ';">Part B premium (comes out of your Social Security)</td>' +
-          '<td align="right" style="' + cell + money + 'color:' + C.muted + ';">' + inline(g.partBText) + '/mo</td></tr>' +
-          totalRow('All-in monthly cost', g.allInText, true);
-      }
-      out.push(tbl + '</table>');
+        '<tr><td style="' + cell + 'background:' + C.navy + ';color:#ffffff;font-weight:bold;font-size:18px;">Total monthly cost</td>' +
+        '<td align="right" style="' + cell + amt + 'background:' + C.navy + ';color:#ffffff;font-weight:bold;font-size:18px;">' + inline(g.totalText) + '/mo</td></tr>' +
+        '</table>';
+      out.push(tbl);
+      if (g.note) out.push('<p style="' + FONT + 'margin:0 0 14px;font-size:14px;color:' + C.muted + ';">' + inline(g.note) + '</p>');
     }
 
     if (m.today.length) {
@@ -544,12 +561,11 @@
     if (m.glance) {
       var g = m.glance;
       out.push('YOUR COVERAGE AT A GLANCE');
-      g.rows.forEach(function (r) { out.push('- ' + plain(r.label) + ': ' + plain(r.text) + '/mo'); });
-      out.push((g.partBText ? 'Total for the plans above: ' : 'Your total monthly premium: ') + plain(g.totalText) + '/mo');
-      if (g.partBText) {
-        out.push('Part B premium (comes out of your Social Security): ' + plain(g.partBText) + '/mo');
-        out.push('All-in monthly cost: ' + plain(g.allInText) + '/mo');
-      }
+      g.rows.forEach(function (r) {
+        out.push('- ' + plain(r.label) + ': ' + plain(r.text) + '/mo' + (r.detail ? ' (' + plain(r.detail) + ')' : ''));
+      });
+      out.push('Total monthly cost: ' + plain(g.totalText) + '/mo');
+      if (g.note) out.push(plain(g.note));
       out.push('');
     }
     if (m.today.length) {
