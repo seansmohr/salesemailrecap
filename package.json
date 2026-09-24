@@ -1,0 +1,9 @@
+{
+  "name": "sales-email-recap",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Generates prospect recap emails for Medicare Advantage, Medicare Supplement and ancillary coverage.",
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  }
+}
