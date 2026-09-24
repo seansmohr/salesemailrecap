@@ -72,11 +72,12 @@
   }
 
   function updateVisibility(data) {
-    var staying = data.situation === 'stayingEmployer';
     each('[data-situation]', function (p) {
       p.hidden = p.getAttribute('data-situation') !== data.situation;
     });
-    each('[data-hide-when-staying]', function (p) { p.hidden = staying; });
+    each('[data-hide-for]', function (p) {
+      p.hidden = p.getAttribute('data-hide-for').split(' ').indexOf(data.situation) >= 0;
+    });
     each('[data-main]', function (p) {
       p.hidden = p.getAttribute('data-main').split(' ').indexOf(data.main) < 0;
     });

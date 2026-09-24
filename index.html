@@ -24,6 +24,7 @@
           <label><input type="radio" name="situation" value="leavingEmployer"><span>Leaving employer coverage</span></label>
           <label><input type="radio" name="situation" value="stayingEmployer"><span>Staying on employer coverage</span></label>
           <label><input type="radio" name="situation" value="onMedicare"><span>Already on Medicare</span></label>
+          <label class="span-2"><input type="radio" name="situation" value="tooEarly"><span>Too early for Medicare</span></label>
         </div>
 
         <div class="panel grid2" data-situation="onMedicare">
@@ -36,7 +37,7 @@
         </label>
       </section>
 
-      <section class="card" data-hide-when-staying>
+      <section class="card" data-hide-for="stayingEmployer tooEarly">
         <h2>Main coverage</h2>
         <div class="segmented" role="radiogroup" aria-label="Main coverage">
           <label><input type="radio" name="main" value="mapd"><span>Medicare Advantage</span></label>
@@ -85,7 +86,7 @@
             </div>
           </div>
 
-          <div class="product" data-product="recovery" data-hide-when-staying>
+          <div class="product" data-product="recovery" data-hide-for="stayingEmployer">
             <label class="product-toggle"><input type="checkbox" name="anc.recovery.on"> Recovery Care</label>
             <div class="product-body grid2">
               <label>Daily benefit ($)<input name="anc.recovery.daily" inputmode="decimal" placeholder="400"></label>
@@ -94,7 +95,7 @@
             </div>
           </div>
 
-          <div class="product" data-product="home" data-hide-when-staying>
+          <div class="product" data-product="home" data-hide-for="stayingEmployer">
             <label class="product-toggle"><input type="checkbox" name="anc.home.on"> Home Healthcare</label>
             <div class="product-body grid2">
               <label>Daily benefit ($)<input name="anc.home.daily" inputmode="decimal" placeholder="150"></label>
@@ -102,7 +103,7 @@
             </div>
           </div>
 
-          <div class="product" data-product="hospital" data-hide-when-staying>
+          <div class="product" data-product="hospital" data-hide-for="stayingEmployer">
             <label class="product-toggle"><input type="checkbox" name="anc.hospital.on"> Hospital Indemnity</label>
             <div class="product-body grid3">
               <label>Daily benefit ($)<input name="anc.hospital.daily" inputmode="decimal" placeholder="300"></label>
@@ -111,7 +112,7 @@
             </div>
           </div>
 
-          <div class="product" data-product="dvh" data-hide-when-staying>
+          <div class="product" data-product="dvh" data-hide-for="stayingEmployer">
             <label class="product-toggle"><input type="checkbox" name="anc.dvh.on"> Dental, Vision &amp; Hearing</label>
             <div class="product-body grid2">
               <label>Annual max ($)<input name="anc.dvh.annualMax" inputmode="decimal" placeholder="5000"></label>

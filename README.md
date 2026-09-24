@@ -10,7 +10,8 @@ and walk through it line by line with the prospect on the phone.
 
 1. Open the Railway link (see below), or open `index.html` directly in a browser.
 2. Enter the **prospect's first name** and pick their **situation**:
-   Turning 65, Leaving employer coverage, Staying on employer coverage, or Already on Medicare.
+   Turning 65, Leaving employer coverage, Staying on employer coverage, Already on Medicare,
+   or Too early for Medicare.
 3. Optionally add a line **in their words** (it appears in the email).
 4. Pick the **main coverage** (Medicare Advantage, Medicare Supplement or Ancillary)
    and tick the **products** pitched, with benefit amounts and premiums.
@@ -29,6 +30,7 @@ The email ends with "Best regards," so your own email signature follows it.
 | Leaving employer coverage | Main coverage + all products | Same, written for coming off an employer plan |
 | Staying on employer coverage | Cancer and Heart Attack & Stroke only | "Delaying Medicare" steps (Form CMS-L564 → HR → submit with the Part A & B application), then critical illness coverage framed around protecting income |
 | Already on Medicare | Current plan + premium, main coverage + products | Adds a "What You Have Now vs. What We Recommend" table |
+| Too early for Medicare | All ancillary products (no main coverage) | "Getting Ready for Medicare" (enrollment window, Part B penalty), a "Why now" box (qualify while young and healthy, lock in the price), then the products |
 
 Every email has **Your Coverage at a Glance** (premiums and totals), **Where You Are Today**,
 and numbered product sections with a **Why this fits you** box. The Medicare disclaimer is

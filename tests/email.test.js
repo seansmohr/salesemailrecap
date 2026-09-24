@@ -233,3 +233,30 @@ test('Recovery Care is never described as long-term care', () => {
   assert.doesNotMatch(r.text, /long[- ]term/i);
   assert.match(r.text, /Why this fits you: If your recovery takes longer than Medicare covers/);
 });
+
+test('Too early for Medicare: getting-ready section, all ancillary, why-now box', () => {
+  const r = buildEmail({
+    prospect: { firstName: 'Dana' }, situation: 'tooEarly', main: 'mapd',
+    mapd: { carrier: 'Humana', premium: '0' }, partBPremium: '202.90',
+    anc: products
+  }, config);
+  assert.match(r.text, /not eligible for Medicare yet/);
+  assert.match(r.text, /1\. GETTING READY FOR MEDICARE\n/);
+  assert.match(r.text, /Initial Enrollment Period is 7 months/);
+  assert.match(r.text, /lifelong Part B penalty/);
+  assert.match(r.text, /I’ll reach out about 3 months before your window opens/);
+  assert.equal((r.text.match(/Why now: /g) || []).length, 1);
+  assert.match(r.text, /qualification process.*young and healthy.*lock in the lowest price for life/);
+  // all six ancillary products, no Medicare plan, Part B or disclaimer
+  assert.match(r.text, /2\. CANCER, HEART ATTACK & STROKE/);
+  assert.match(r.text, /DENTAL, VISION & HEARING/);
+  assert.doesNotMatch(r.text, /MEDICARE PARTS A & B|MEDICARE ADVANTAGE|Medicare Part B:/);
+  assert.doesNotMatch(r.text, /We do not offer every plan/);
+  assert.equal(r.subject, 'Dana, your coverage recap');
+  assert.deepEqual(r.warnings, []);
+});
+
+test('Why-now box only appears for too early for Medicare', () => {
+  const r = buildEmail(medSupp({ anc: { cancer: products.cancer } }), config);
+  assert.doesNotMatch(r.text, /Why now/);
+});

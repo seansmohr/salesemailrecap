@@ -59,7 +59,7 @@
     });
   }
 
-  var SITUATIONS = ['t65', 'leavingEmployer', 'stayingEmployer', 'onMedicare'];
+  var SITUATIONS = ['t65', 'leavingEmployer', 'stayingEmployer', 'tooEarly', 'onMedicare'];
   var PRODUCTS = ['cancer', 'heart', 'recovery', 'home', 'hospital', 'dvh'];
 
   // ---------- builder ----------
@@ -88,16 +88,18 @@
     if (!situation) warnings.push('Pick the prospect’s situation.');
     var sit = situation ? cfg.situations[situation] : { today: '', why: {} };
     var staying = situation === 'stayingEmployer';
+    var early = situation === 'tooEarly';
 
+    // Not on Medicare yet (staying on employer / too early): no Medicare plan.
     // Staying on employer coverage: cancer / heart attack & stroke only.
-    var main = staying ? 'none'
+    var main = staying || early ? 'none'
       : (['mapd', 'medsupp', 'ancillary'].indexOf(d.main) >= 0 ? d.main : 'ancillary');
     var on = {};
     PRODUCTS.forEach(function (k) {
       on[k] = !!(anc[k] && anc[k].on) && (!staying || k === 'cancer' || k === 'heart');
     });
     var anyAnc = PRODUCTS.some(function (k) { return on[k]; });
-    if ((main === 'ancillary' || staying) && !anyAnc) {
+    if ((main === 'ancillary' || main === 'none') && !anyAnc) {
       warnings.push(staying
         ? 'Tick Cancer and/or Heart Attack & Stroke.'
         : 'Ancillary: tick at least one product.');
@@ -124,7 +126,10 @@
     //   up to 3 bullets / one "Why this fits you" line.
     var ANC_PREFACE = 'Your health insurance only pays for what it approves. The coverage below pays you cash for what it won’t, so a diagnosis, hospital stay or recovery doesn’t come out of your savings.';
     function pushAncillary(section) {
-      if (!sections.some(function (x) { return x.ancillary; })) section.preface = ANC_PREFACE;
+      if (!sections.some(function (x) { return x.ancillary; })) {
+        section.preface = ANC_PREFACE;
+        if (sit.whyNow) section.whyNow = sit.whyNow;
+      }
       section.ancillary = true;
       sections.push(section);
     }
@@ -139,6 +144,18 @@
           '**Take it to your HR department.** They’ll help you fill it out.',
           '**Submit it with your Medicare Part A & B application** through Social Security. This protects you from late enrollment penalties.',
           'You have **8 months** after your coverage ends; start 2–3 months early so there’s no gap. Call me and I’ll walk you through it.'
+        ]
+      });
+    }
+
+    // ----- Getting ready for Medicare (too early for Medicare) -----
+    if (early) {
+      sections.push({
+        title: 'Getting Ready for Medicare',
+        bullets: [
+          'Your **Initial Enrollment Period** is 7 months: the 3 months before your 65th birthday month, that month, and the 3 months after.',
+          'Signing up late can mean a **lifelong Part B penalty**.',
+          'I’ll reach out about 3 months before your window opens, so we can review your options together.'
         ]
       });
     }
@@ -516,6 +533,12 @@
 
     m.sections.forEach(function (s, i) {
       if (s.preface) out.push('<p style="' + FONT + 'margin:30px 0 0;font-size:17px;font-weight:bold;color:' + C.navy + ';">' + inline(s.preface) + '</p>');
+      if (s.whyNow) {
+        out.push('<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;margin:12px 0 0;"><tr>' +
+          '<td style="' + FONT + 'background:' + C.whyBg + ';border-left:4px solid ' + C.whyLine + ';padding:10px 14px;">' +
+          '<strong style="color:' + C.whyLine + ';">Why now:</strong> ' + inline(s.whyNow) +
+          '</td></tr></table>');
+      }
       out.push(headingHtml(s.title, i + 1, s.price));
       if (s.subtitle) out.push('<p style="' + FONT + 'margin:0 0 6px;color:' + C.muted + ';font-weight:bold;">' + inline(s.subtitle) + '</p>');
       if (s.lead) out.push('<p style="' + FONT + 'margin:0 0 6px;font-size:17px;">' + inline(s.lead) + '</p>');
@@ -575,6 +598,7 @@
     }
     m.sections.forEach(function (s, i) {
       if (s.preface) out.push(plain(s.preface), '');
+      if (s.whyNow) out.push('Why now: ' + plain(s.whyNow), '');
       out.push((i + 1) + '. ' + plain(s.title).toUpperCase() + (s.price ? ' (' + plain(s.price) + '/mo)' : ''));
       if (s.subtitle) out.push(plain(s.subtitle));
       if (s.lead) out.push(plain(s.lead));

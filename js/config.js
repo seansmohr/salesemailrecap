@@ -62,6 +62,13 @@
           critical: 'If a critical illness kept you from working, God forbid, your paycheck would stop. This puts {ciCash} in your hands to keep the bills paid.'
         }
       },
+      tooEarly: {
+        label: 'Too early for Medicare',
+        today: "You're not eligible for Medicare yet, but it's coming. Our goal is to protect you now and make sure you're ready when you turn 65.",
+        // Shown once, above the first product, in a "Why now" box.
+        whyNow: "This coverage has a qualification process, so it's easiest to get while you're young and healthy. Assuming you qualify, you lock in the lowest price for life.",
+        why: {}
+      },
       onMedicare: {
         label: 'Already on Medicare',
         today: "You're already on Medicare and want to make sure you have the best coverage for your money. Below is how what you have now compares with what we recommend.",
