@@ -44,43 +44,44 @@
         label: 'Turning 65',
         today: "You're turning 65 and getting set up with Medicare for the first time. Our goal is to get you the right coverage from day one and close the gaps Medicare leaves open.",
         why: {
-          medsupp: "You're in your Medigap Open Enrollment window: for 6 months after your Part B starts, you can't be turned down or charged more because of your health."
+          medsupp: "You're in your open enrollment window: for 6 months after Part B starts, you can't be turned down or charged more for your health."
         }
       },
       leavingEmployer: {
         label: 'Leaving employer coverage',
         today: "You're coming off your employer coverage and moving onto Medicare. Our goal is to make sure the switch doesn't leave you with gaps or surprise costs your employer plan used to handle.",
         why: {
-          medsupp: "You're in your Medigap Open Enrollment window: for 6 months after your Part B starts, you can't be turned down or charged more because of your health.",
-          dvh: 'Your employer plan likely included dental and vision. This keeps that coverage going, with up to {dvhMax} a year.'
+          medsupp: "You're in your open enrollment window: for 6 months after Part B starts, you can't be turned down or charged more for your health.",
+          dvh: 'Keeps the dental and vision coverage you had through work.'
         }
       },
       stayingEmployer: {
         label: 'Staying on employer coverage',
         today: "You're staying on your employer coverage for now and delaying Medicare. That makes sense while you're still working, and there's one simple step to take when that coverage ends (see section 1).",
         why: {
-          critical: 'Your employer plan covers your medical bills, but if a critical illness kept you from working, God forbid, your paycheck would stop. This puts {ciCash} in your hands to replace lost income and keep the bills paid.'
+          critical: 'If a critical illness kept you from working, God forbid, your paycheck would stop. This puts {ciCash} in your hands to keep the bills paid.'
         }
       },
       onMedicare: {
         label: 'Already on Medicare',
         today: "You're already on Medicare and want to make sure you have the best coverage for your money. Below is how what you have now compares with what we recommend.",
         why: {
-          medsupp: 'Compared with what you have now, this gives you the freedom to see any doctor in the U.S. who accepts Medicare, with no networks or referrals.',
-          mapd: 'Compared with what you have now, this plan gives you better value for the way you use your coverage.'
+          medsupp: 'Unlike what you have now, you can see any doctor in the U.S. who accepts Medicare.',
+          mapd: 'Better value than what you have now for the way you use your coverage.'
         }
       }
     },
 
-    // Default "Why this fits you" lines, used for every situation.
+    // Default "Why this fits you" line for each product, used when the
+    // situation has no line of its own. One line each — keep them short.
     defaultWhy: {
-      mapd: 'One plan for your doctors, hospital stays and prescriptions, with a {mapdPremium} monthly premium and a yearly cap on what you pay.',
+      mapd: 'One plan for doctors, hospital and prescriptions, with a yearly cap on what you pay.',
       medsupp: 'Predictable costs: after the {partBDeductible} Part B deductible, {medsuppCoverage}.',
-      critical: 'Your health plan only pays what it approves. This puts {ciCash} in your hands for everything else that comes with a diagnosis.',
-      recovery: "Medicare won't approve assisted living or skilled nursing after Day 100. This pays {recoveryDaily} a day, up to {recoveryMax}, so those costs don't come out of your savings.",
-      home: "Medicare approves only limited care at home. This pays {homeDaily} a day so you can recover in your own home without worrying about what isn't approved.",
-      hospital: "A hospital stay leaves you with costs your health plan won't pay. This pays {hospitalDaily} for every day you're admitted to cover them.",
-      dvh: "Medicare doesn't approve routine dental, vision or hearing care. This gives you up to {dvhMax} a year toward those costs, with no deductible."
+      critical: 'If a diagnosis ever comes, {ciCash} lands in your hands to use however you need.',
+      recovery: 'Long-term care costs never come out of your savings.',
+      home: 'You recover at home instead of a facility, without worrying about the bill.',
+      hospital: "A hospital stay won't turn into a surprise bill.",
+      dvh: "Routine care you'll actually use, with no deductible."
     }
   };
 

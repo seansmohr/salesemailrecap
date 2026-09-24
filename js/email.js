@@ -109,41 +109,36 @@
     var sections = [];    // numbered sections
     var mainLabel = '';
 
-    // Up to two "Why this fits you" lines: situation-specific, then default.
+    // One "Why this fits you" line: situation-specific first, then any
+    // pairing line, then the product's default line.
     function whyFor(key, extra) {
-      var lines = [];
-      if (sit.why && sit.why[key]) lines.push(fill(sit.why[key], tokens));
-      if (!staying && cfg.defaultWhy[key]) lines.push(fill(cfg.defaultWhy[key], tokens));
-      (extra || []).forEach(function (l) { lines.push(l); });
-      return lines.slice(0, 3);
+      var candidates = [];
+      if (sit.why && sit.why[key]) candidates.push(sit.why[key]);
+      (extra || []).forEach(function (l) { candidates.push(l); });
+      if (cfg.defaultWhy[key]) candidates.push(cfg.defaultWhy[key]);
+      return candidates.length ? fill(candidates[0], tokens) : null;
     }
 
-    // Every ancillary product lists costs health insurance won't approve.
-    function notApproved(items, lead) {
-      return {
-        text: lead || 'Covers the **costs health insurance won’t approve**, such as:',
-        sub: items
-      };
-    }
-    var ANC_PREFACE = 'Your health insurance only pays for what it approves. The coverage below is built for everything it won’t, so a diagnosis, hospital stay or recovery doesn’t come out of your savings.';
+    // Every section has the same short shape:
+    //   heading (+ monthly price) / optional subtitle / bold lead line /
+    //   up to 3 bullets / one "Why this fits you" line.
+    var ANC_PREFACE = 'Your health insurance only pays for what it approves. The coverage below pays you cash for what it won’t, so a diagnosis, hospital stay or recovery doesn’t come out of your savings.';
     function pushAncillary(section) {
-      var isFirst = !sections.some(function (x) { return x.ancillary; });
+      if (!sections.some(function (x) { return x.ancillary; })) section.preface = ANC_PREFACE;
       section.ancillary = true;
-      if (isFirst) section.preface = ANC_PREFACE;
       sections.push(section);
     }
 
     // ----- Delaying Medicare (staying on employer coverage) -----
     if (staying) {
       sections.push({
-        title: 'Delaying Medicare: What to Do When Your Employer Coverage Ends',
-        intro: 'Because you have creditable coverage through your employer, you can delay Medicare Part B without a penalty. When your employer coverage is ending, here’s what to do:',
+        title: 'Delaying Medicare: When Your Employer Coverage Ends',
+        lead: 'You have creditable coverage through work, so you can delay Part B without a penalty. When that coverage is ending:',
         bullets: [
           { link: cfg.cmsL564Url, text: 'Get Form CMS-L564 (Request for Employment Information)' },
-          '**Take it to your HR department.** They’ll help you fill it out; it confirms you had employer coverage.',
-          '**Submit the completed form along with your Medicare Part A & B application** through Social Security. This protects you from late enrollment penalties.',
-          'You have **8 months** after your employer coverage or employment ends to enroll without a penalty. We recommend starting about 2–3 months before your coverage ends, so there’s no gap.',
-          'Call me when that time comes and I’ll walk you through it.'
+          '**Take it to your HR department.** They’ll help you fill it out.',
+          '**Submit it with your Medicare Part A & B application** through Social Security. This protects you from late enrollment penalties.',
+          'You have **8 months** after your coverage ends; start 2–3 months early so there’s no gap. Call me and I’ll walk you through it.'
         ]
       });
     }
@@ -155,12 +150,10 @@
       sections.push({
         title: 'Medicare Parts A & B',
         bullets: [
-          '**Part A (hospital):** premium-free for most people',
-          '**Part B (doctors & outpatient care):** covers 80% of Medicare-approved costs',
-          '**Your Part B premium: ' + partB.text + '/month**, based on your income from two years ago. It comes directly out of your Social Security check.'
-        ],
-        after: 'That leaves the other 20% on you, with no yearly limit. We focused on ' +
-          (main === 'mapd' ? 'a Medicare Advantage plan' : 'a Medicare Supplement plan') + ' to cover that gap.'
+          '**Part A (hospital)** is premium-free. **Part B (doctors)** covers 80% of approved costs, for ' + partB.text + '/month from your Social Security.',
+          'The other 20% has no yearly limit. That’s the gap your ' +
+            (main === 'mapd' ? 'Medicare Advantage plan' : 'Medicare Supplement') + ' covers.'
+        ]
       });
     }
 
@@ -168,19 +161,17 @@
     if (main === 'mapd') {
       var m = d.mapd || {};
       var mPrem = needPremium(m.premium, 'Medicare Advantage');
-      tokens.mapdPremium = mPrem.text;
       var planLabel = [str(m.carrier), str(m.planName)].filter(Boolean).join(' – ');
       if (!planLabel) warnings.push('Medicare Advantage: enter the carrier or plan name.');
       mainLabel = 'Medicare Advantage' + (planLabel ? ' (' + planLabel + ')' : '');
       glance.push({ label: mainLabel, amount: mPrem.n, text: mPrem.text });
       sections.push({
         title: 'Your Medicare Advantage Plan',
+        price: mPrem.text,
         subtitle: planLabel || placeholder('carrier / plan name'),
         bullets: [
-          'Replaces Original Medicare as how you receive your benefits. You keep Parts A & B and continue paying your Part B premium.',
-          mPrem.n === 0 ? '**$0 monthly plan premium**' : '**Monthly plan premium: ' + mPrem.text + '**',
-          'Copays and coinsurance, capped by a yearly maximum out-of-pocket limit',
-          'Plan details, including prescription and extra benefits, are in your brochure',
+          'Replaces Original Medicare as how you get your benefits; you keep paying your Part B premium',
+          'Copays with a yearly out-of-pocket cap; plan details are in your brochure',
           'Uses a provider network; some services need prior authorization'
         ],
         why: whyFor('mapd')
@@ -194,88 +185,68 @@
       var sPrem = needPremium(s.premium, 'Medicare Supplement');
       var carrier = str(s.carrier);
       if (!carrier) warnings.push('Medicare Supplement: enter the carrier.');
-      var sb;
-      if (letter === 'G') {
-        tokens.medsuppCoverage = 'Plan G pays the rest of your Medicare-approved costs';
-        sb = [
-          'After the ' + deductibleText + ' yearly Part B deductible, Plan G pays the rest of your Medicare-approved costs',
-          'No copays for doctor visits, hospital stays or surgeries'
-        ];
-      } else {
-        tokens.medsuppCoverage = 'Plan N covers your Medicare-approved costs aside from small office and ER copays';
-        sb = [{
-          text: 'After the ' + deductibleText + ' yearly Part B deductible, Plan N covers your Medicare-approved costs, except:',
-          sub: [
-            'Up to a $20 copay for some office visits',
-            'Up to a $50 copay for ER visits (waived if you are admitted)',
-            'Part B excess charges (up to 15%) if a doctor bills above Medicare’s rate, which is uncommon'
-          ]
-        }];
-      }
-      sb.push('See any doctor in the U.S. who accepts Medicare. No networks, no referrals.');
-      sb.push('Benefits are standardized by Medicare, so every carrier’s Plan ' + letter + ' covers the same things. Only the price differs.');
-      sb.push("Prescriptions aren't included, so it's paired with a stand-alone Part D drug plan.");
+      tokens.medsuppCoverage = letter === 'G'
+        ? 'Plan G pays the rest of your approved costs'
+        : 'Plan N covers your approved costs aside from small copays';
       mainLabel = 'Medicare Supplement Plan ' + letter + (carrier ? ' (' + carrier + ')' : '');
       glance.push({ label: mainLabel, amount: sPrem.n, text: sPrem.text });
       sections.push({
         title: 'Your Medicare Supplement: Plan ' + letter,
+        price: sPrem.text,
         subtitle: carrier || placeholder('carrier'),
-        bullets: sb,
-        premium: '**Premium: ' + sPrem.text + '/month**',
+        bullets: [
+          letter === 'G'
+            ? 'After the ' + deductibleText + ' Part B deductible, pays the rest of your Medicare-approved costs'
+            : 'After the ' + deductibleText + ' Part B deductible, covers your Medicare-approved costs except up to $20 office copays, $50 ER copays and rare Part B excess charges',
+          'See any doctor in the U.S. who accepts Medicare. No networks, no referrals.',
+          'Prescriptions aren’t included, so it’s paired with a Part D drug plan'
+        ],
         why: whyFor('medsupp')
       });
     }
 
     // ----- Cancer / Heart Attack & Stroke (one combined section) -----
     if (on.cancer || on.heart) {
-      var cb = [];
       var ciPrem = [];
       var cBen = null, hBen = null;
       if (on.cancer) {
         cBen = need(anc.cancer.benefit, money, 'benefit', 'Cancer: enter the benefit amount.');
         var cPrem = needPremium(anc.cancer.premium, 'Cancer');
-        cb.push('**' + cBen.text + ' Cancer benefit:** ' + cPrem.text + '/month');
         glance.push({ label: 'Cancer (' + cBen.text + ')', amount: cPrem.n, text: cPrem.text });
         ciPrem.push(cPrem);
       }
       if (on.heart) {
         hBen = need(anc.heart.benefit, money, 'benefit', 'Heart Attack & Stroke: enter the benefit amount.');
         var hPrem = needPremium(anc.heart.premium, 'Heart Attack & Stroke');
-        cb.push('**' + hBen.text + ' Heart Attack & Stroke benefit:** ' + hPrem.text + '/month');
         glance.push({ label: 'Heart Attack & Stroke (' + hBen.text + ')', amount: hPrem.n, text: hPrem.text });
         ciPrem.push(hPrem);
       }
+      var lead;
       if (cBen && hBen && cBen.text !== hBen.text) {
         tokens.ciCash = 'a cash benefit (' + cBen.text + ' for cancer, ' + hBen.text + ' for a heart attack or stroke)';
+        lead = '**' + cBen.text + ' cash** for cancer and **' + hBen.text + ' cash** for a heart attack or stroke, paid directly to you upon diagnosis';
       } else {
-        tokens.ciCash = 'a ' + (cBen || hBen).text + ' cash benefit';
+        var ben = (cBen || hBen).text;
+        tokens.ciCash = 'a ' + ben + ' cash benefit';
+        lead = '**' + ben + ' cash** paid directly to you upon a ' +
+          (cBen && hBen ? 'cancer, heart attack or stroke' : cBen ? 'cancer' : 'heart attack or stroke') + ' diagnosis';
       }
-      cb.push('Pays a **lump-sum cash benefit upon diagnosis**, paid directly to you');
-      // Costs health insurance won't approve, matched to the products pitched.
-      var notCovered = [];
-      if (on.cancer) {
-        notCovered.push('**Travel and lodging** for treatment at a top cancer center like MD Anderson or Mayo Clinic, often for weeks at a time');
-        notCovered.push('**Treatments your plan won’t approve**, such as experimental, clinical-trial or out-of-network care');
-      }
-      if (on.heart) {
-        notCovered.push('**Home changes after a stroke or heart attack**, like a wheelchair ramp, stair lift or walk-in shower, which can run thousands of dollars');
-        notCovered.push('**In-home help and caregiving** while you recover, or a family member taking unpaid time off to care for you');
-      }
-      cb.push(notApproved(notCovered, 'Covers the **costs health insurance won’t approve** that come with a diagnosis, such as:'));
-      cb.push(staying
-        ? 'Use it however you need: replacing lost income, paying the mortgage and bills, or covering those extra costs'
-        : 'Use it however you need, on top of what your health plan pays');
-      var total = ciPrem.length > 1 && ciPrem.every(function (x) { return x.n !== null; })
-        ? '**Total premium: ' + premiumText(round2(ciPrem[0].n + ciPrem[1].n)) + '/month**'
-        : null;
+      // Two strongest examples of costs health insurance won't approve.
+      var ciBullets = [];
+      if (on.cancer) ciBullets.push('Pays for **travel and lodging** at a top cancer center like MD Anderson or Mayo Clinic');
+      if (on.heart) ciBullets.push('Pays for **home changes after a stroke**, like a ramp, stair lift or walk-in shower');
+      if (!on.heart) ciBullets.push('Pays for **treatments your plan won’t approve**, like experimental or out-of-network care');
+      if (!on.cancer) ciBullets.push('Pays for **in-home help and caregiving** while you recover');
+      if (staying) ciBullets.push('Or use it to **replace lost income** and keep the bills paid while you recover');
+      var ciPrice = ciPrem.every(function (x) { return x.n !== null; })
+        ? premiumText(round2(ciPrem.reduce(function (a, x) { return a + x.n; }, 0)))
+        : placeholder('premium');
       pushAncillary({
-        title: on.cancer && on.heart ? 'Cancer, Heart Attack & Stroke Coverage'
+        title: on.cancer && on.heart ? 'Cancer, Heart Attack & Stroke'
           : on.cancer ? 'Cancer Coverage' : 'Heart Attack & Stroke Coverage',
-        intro: staying
-          ? 'A critical illness can keep you out of work for months. Your health plan pays the medical bills, but not your mortgage, your utilities or your groceries.'
-          : 'Even with great medical coverage, a serious diagnosis brings costs your health plan won’t pay for, and they add up fast.',
-        bullets: cb,
-        premium: total,
+        price: ciPrice,
+        lead: lead,
+        bullets: ciBullets,
         why: whyFor('critical')
       });
     }
@@ -285,26 +256,16 @@
       var rc = cfg.recoveryCare;
       var rDaily = need(anc.recovery.daily, money, 'daily benefit', 'Recovery Care: enter the daily benefit.');
       var rPrem = needPremium(anc.recovery.premium, 'Recovery Care');
-      var rMin = rDaily.n !== null ? money(rDaily.n * rc.consecutiveDays) : placeholder('total');
       var rMax = rDaily.n !== null ? money(rDaily.n * rc.lifetimeDays) : placeholder('total');
-      tokens.recoveryDaily = rDaily.text;
-      tokens.recoveryMax = rMax;
       glance.push({ label: 'Recovery Care (' + rDaily.text + '/day)', amount: rPrem.n, text: rPrem.text });
       pushAncillary({
-        title: 'Recovery Care: Skilled Nursing & Assisted Living',
-        intro: 'This coverage picks up where Medicare leaves off, for the long-term care it won’t approve.',
+        title: 'Recovery Care',
+        price: rPrem.text,
+        lead: '**' + rDaily.text + '/day** once Medicare stops paying, up to ' + rMax,
         bullets: [
-          '**' + rDaily.text + '/day benefit**',
-          'Begins Day ' + rc.startDay + ', after Medicare stops paying',
-          'Lasts up to ' + rc.consecutiveDays + ' consecutive days or ' + rc.lifetimeDays + ' lifetime days',
-          '**Total coverage: ' + rMin + ' minimum, up to ' + rMax + '**',
-          notApproved([
-            '**Assisted living**, which Medicare pays nothing toward',
-            '**Skilled nursing after Day 100**, when Medicare stops paying',
-            '**Help with bathing, dressing and eating** (custodial care)'
-          ])
+          'Pays for **assisted living**, which Medicare pays nothing toward',
+          'Pays for **skilled nursing after Day ' + (rc.startDay - 1) + '**, when Medicare stops'
         ],
-        premium: '**Premium: ' + rPrem.text + '/month**',
         why: whyFor('recovery')
       });
     }
@@ -313,19 +274,15 @@
     if (on.home) {
       var hDaily = need(anc.home.daily, money, 'daily benefit', 'Home Healthcare: enter the daily benefit.');
       var hhPrem = needPremium(anc.home.premium, 'Home Healthcare');
-      tokens.homeDaily = hDaily.text;
       glance.push({ label: 'Home Healthcare (' + hDaily.text + '/day)', amount: hhPrem.n, text: hhPrem.text });
       pushAncillary({
-        title: 'Home Healthcare: Recover in the Comfort of Your Own Home',
-        intro: 'After a hospital stay, surgery or illness, most people heal faster and feel better at home. This coverage pays you a cash benefit for care at home, so you can recover in your own bed, around your family, without worrying about the bill.',
+        title: 'Home Healthcare',
+        price: hhPrem.text,
+        lead: '**' + hDaily.text + '/day** so you can recover in the comfort of your own home',
         bullets: [
-          '**' + hDaily.text + ' per day of home care**',
-          notApproved([
-            '**Help with bathing and dressing**, meals and light housekeeping while you recover',
-            '**Care beyond the limited, part-time visits** Medicare approves'
-          ])
+          'Pays for **help with bathing, dressing, meals and housekeeping**',
+          'Pays for **care beyond the limited visits** Medicare approves'
         ],
-        premium: '**Premium: ' + hhPrem.text + '/month**',
         why: whyFor('home')
       });
     }
@@ -335,32 +292,29 @@
       var hi = anc.hospital;
       var hiDaily = need(hi.daily, money, 'daily benefit', 'Hospital Indemnity: enter the daily hospital benefit.');
       var hiPrem = needPremium(hi.premium, 'Hospital Indemnity');
-      tokens.hospitalDaily = hiDaily.text;
       var snfDaily = num(hi.snfDaily);
-      var hib = ['**' + hiDaily.text + '/day** for each day you are in the hospital'];
+      var hib = [];
       if (snfDaily !== null) {
-        hib.push('**' + money(snfDaily) + '/day in a skilled nursing facility, Days ' + cfg.hospitalSnf.startDay + '–' + cfg.hospitalSnf.endDay + '.** Those are the days Medicare charges you a daily copay.');
+        hib.push('**' + money(snfDaily) + '/day in a skilled nursing facility**, Days ' + cfg.hospitalSnf.startDay + '–' + cfg.hospitalSnf.endDay + ', when Medicare charges a daily copay');
         if (main === 'medsupp') {
           warnings.push('Heads up: Medicare Supplement plans G and N already pay the skilled nursing copay for Days 21–100, so the SNF rider overlaps. The email still includes it.');
         }
       }
-      var hiCosts = [];
       // Med Supp G/N already pay the hospital deductible and copays.
-      if (main !== 'medsupp') hiCosts.push('**Your plan’s hospital deductible and daily copays**');
-      hiCosts.push('**Bills at home** that keep coming while you’re in the hospital');
-      hiCosts.push('**Family travel and parking** during your stay');
-      hib.push(notApproved(hiCosts));
+      hib.push(main === 'medsupp'
+        ? 'Pays for **bills at home** that keep coming while you’re in the hospital'
+        : 'Pays for your plan’s **hospital deductible and daily copays**');
       glance.push({
         label: 'Hospital Indemnity (' + hiDaily.text + '/day)' + (snfDaily !== null ? ' + Skilled Nursing rider' : ''),
         amount: hiPrem.n, text: hiPrem.text
       });
       pushAncillary({
-        title: 'Hospital Indemnity' + (snfDaily !== null ? ' with Skilled Nursing Rider' : ''),
-        intro: 'Pays you cash when you are admitted to the hospital, for the costs that come with a stay.',
+        title: 'Hospital Indemnity' + (snfDaily !== null ? ' + Skilled Nursing' : ''),
+        price: hiPrem.text,
+        lead: '**' + hiDaily.text + '/day** cash for every day you’re in the hospital',
         bullets: hib,
-        premium: '**Premium: ' + hiPrem.text + '/month**',
         why: whyFor('hospital', main === 'mapd'
-          ? ['This pairs with your Medicare Advantage plan to help cover its hospital' + (snfDaily !== null ? ' and skilled nursing' : '') + ' copays.']
+          ? ['Pairs with your Medicare Advantage plan to cover its hospital' + (snfDaily !== null ? ' and skilled nursing' : '') + ' copays.']
           : [])
       });
     }
@@ -369,21 +323,15 @@
     if (on.dvh) {
       var dMax = need(anc.dvh.annualMax, money, 'annual max', 'Dental/Vision/Hearing: enter the annual maximum.');
       var dPrem = needPremium(anc.dvh.premium, 'Dental/Vision/Hearing');
-      tokens.dvhMax = dMax.text;
       glance.push({ label: 'Dental, Vision & Hearing', amount: dPrem.n, text: dPrem.text });
       pushAncillary({
         title: 'Dental, Vision & Hearing',
+        price: dPrem.text,
+        lead: '**' + dMax.text + '/year** per person, no deductible, preventive care covered at 100%',
         bullets: [
-          '**Annual maximum: ' + dMax.text + ' per person**',
-          'No deductible',
-          'Preventive care covered at 100%',
-          notApproved([
-            '**Routine dental work**, like cleanings, fillings, crowns and dentures',
-            '**Eye exams and glasses**',
-            '**Hearing aids**, which Medicare doesn’t cover and which often cost thousands'
-          ])
+          'Pays for **dental work** like fillings, crowns and dentures',
+          'Pays for **eye exams, glasses and hearing aids**, which Medicare doesn’t cover'
         ],
-        premium: '**Premium: ' + dPrem.text + '/month**',
         why: whyFor('dvh')
       });
     }
@@ -487,14 +435,18 @@
       '<ul style="margin:6px 0 0;padding-left:22px;">' + b.sub.map(bulletHtml).join('') + '</ul></li>';
   }
 
-  function headingHtml(title, number) {
+  function headingHtml(title, number, price) {
     var badge = number
       ? '<td width="36" valign="middle" style="width:36px;padding:0;">' +
           '<div style="' + FONT + 'width:30px;height:30px;line-height:30px;border-radius:15px;background:' + C.navy + ';color:#ffffff;text-align:center;font-weight:bold;font-size:16px;">' + number + '</div></td>'
       : '';
-    return '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;margin:30px 0 6px;"><tr>' +
+    var priceCell = price
+      ? '<td valign="middle" align="right" style="' + FONT + 'padding:0 0 0 12px;white-space:nowrap;text-align:right;font-size:17px;font-weight:bold;color:' + C.navy + ';">' + inline(price) + '/mo</td>'
+      : '';
+    return '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;margin:28px 0 6px;"><tr>' +
       badge +
       '<td valign="middle" style="' + FONT + 'padding:0;font-size:20px;font-weight:bold;color:' + C.navy + ';">' + inline(title) + '</td>' +
+      priceCell +
       '</tr></table>';
   }
 
@@ -553,17 +505,14 @@
 
     m.sections.forEach(function (s, i) {
       if (s.preface) out.push('<p style="' + FONT + 'margin:30px 0 0;font-size:17px;font-weight:bold;color:' + C.navy + ';">' + inline(s.preface) + '</p>');
-      out.push(headingHtml(s.title, i + 1));
-      if (s.subtitle) out.push('<p style="' + FONT + 'margin:0 0 10px;color:' + C.muted + ';font-weight:bold;">' + inline(s.subtitle) + '</p>');
-      if (s.intro) out.push('<p ' + P + '>' + inline(s.intro) + '</p>');
-      out.push('<ul style="' + FONT + 'margin:8px 0 12px;padding-left:22px;">' + s.bullets.map(bulletHtml).join('') + '</ul>');
-      if (s.after) out.push('<p ' + P + '>' + inline(s.after) + '</p>');
-      if (s.premium) out.push('<p style="' + FONT + 'margin:0 0 14px;font-size:17px;">' + inline(s.premium) + '</p>');
-      if (s.why && s.why.length) {
-        out.push('<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;margin:4px 0 14px;"><tr>' +
-          '<td style="' + FONT + 'background:' + C.whyBg + ';border-left:4px solid ' + C.whyLine + ';padding:12px 16px;">' +
-          '<div style="font-size:13px;font-weight:bold;letter-spacing:0.5px;text-transform:uppercase;color:' + C.whyLine + ';margin:0 0 4px;">Why this fits you</div>' +
-          s.why.map(function (w) { return '<div style="margin:4px 0 0;">' + inline(w) + '</div>'; }).join('') +
+      out.push(headingHtml(s.title, i + 1, s.price));
+      if (s.subtitle) out.push('<p style="' + FONT + 'margin:0 0 6px;color:' + C.muted + ';font-weight:bold;">' + inline(s.subtitle) + '</p>');
+      if (s.lead) out.push('<p style="' + FONT + 'margin:0 0 6px;font-size:17px;">' + inline(s.lead) + '</p>');
+      out.push('<ul style="' + FONT + 'margin:6px 0 10px;padding-left:22px;">' + s.bullets.map(bulletHtml).join('') + '</ul>');
+      if (s.why) {
+        out.push('<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;margin:4px 0 10px;"><tr>' +
+          '<td style="' + FONT + 'background:' + C.whyBg + ';border-left:4px solid ' + C.whyLine + ';padding:10px 14px;">' +
+          '<strong style="color:' + C.whyLine + ';">Why this fits you:</strong> ' + inline(s.why) +
           '</td></tr></table>');
       }
     });
@@ -617,16 +566,11 @@
     }
     m.sections.forEach(function (s, i) {
       if (s.preface) out.push(plain(s.preface), '');
-      out.push((i + 1) + '. ' + plain(s.title).toUpperCase());
+      out.push((i + 1) + '. ' + plain(s.title).toUpperCase() + (s.price ? ' (' + plain(s.price) + '/mo)' : ''));
       if (s.subtitle) out.push(plain(s.subtitle));
-      if (s.intro) out.push(plain(s.intro));
+      if (s.lead) out.push(plain(s.lead));
       s.bullets.forEach(function (b) { out.push(bulletText(b)); });
-      if (s.after) out.push(plain(s.after));
-      if (s.premium) out.push(plain(s.premium));
-      if (s.why && s.why.length) {
-        out.push('Why this fits you:');
-        s.why.forEach(function (w) { out.push('  ' + plain(w)); });
-      }
+      if (s.why) out.push('Why this fits you: ' + plain(s.why));
       out.push('');
     });
     if (m.disclaimer) out.push(plain(m.disclaimer), '');

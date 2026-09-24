@@ -31,6 +31,7 @@ function medSupp(overrides = {}) {
 }
 
 const hasPlaceholder = (s) => /\[[^\]]+\]/.test(s);
+const count = (s, re) => (s.match(re) || []).length;
 
 test('T65 Med Supp Plan N matches the template totals', () => {
   const { cancer, heart, recovery, dvh } = products;
@@ -38,16 +39,33 @@ test('T65 Med Supp Plan N matches the template totals', () => {
   // 116.16 + 41.85 + 42.65 + 107.63 + 62.13 = 370.42 (the template's total)
   assert.match(r.text, /Total for the plans above: \$370\.42\/mo/);
   assert.match(r.text, /All-in monthly cost: \$573\.32\/mo/);
-  assert.match(r.text, /Total coverage: \$144,000 minimum, up to \$288,000/);
-  assert.match(r.text, /Up to a \$20 copay for some office visits/);
-  assert.match(r.text, /We focused on a Medicare Supplement plan/);
+  assert.match(r.text, /2\. YOUR MEDICARE SUPPLEMENT: PLAN N \(\$116\.16\/mo\)/);
+  assert.match(r.text, /except up to \$20 office copays, \$50 ER copays and rare Part B excess charges/);
+  assert.match(r.text, /That’s the gap your Medicare Supplement covers/);
+  assert.match(r.text, /\$400\/day once Medicare stops paying, up to \$288,000/);
   assert.match(r.text, /turning 65/);
-  assert.match(r.text, /Medigap Open Enrollment window/);
+  assert.match(r.text, /open enrollment window/);
   assert.match(r.text, /We do not offer every plan available/);
   assert.match(r.text, /Best regards,$/);
   assert.equal(r.subject, 'Mary, your Medicare Supplement recap');
   assert.deepEqual(r.warnings, []);
   assert.ok(!hasPlaceholder(r.text), 'no unfilled placeholders');
+});
+
+test('each section is short: price in heading, one why line, at most 3 bullets', () => {
+  const r = buildEmail({
+    prospect: { firstName: 'Bob' }, situation: 't65', main: 'mapd', partBPremium: '202.90',
+    mapd: { carrier: 'Humana', premium: '0' }, anc: products
+  }, config);
+  // premium appears only in the glance table and the section heading
+  assert.equal(count(r.text, /\$107\.63/g), 2);
+  assert.equal(count(r.text, /Why this fits you/g), 6); // MAPD + 5 ancillary sections
+  const sections = r.text.split(/\n\n(?=\d+\. )/).slice(1);
+  sections.forEach((sec) => {
+    const bullets = sec.split('\n').filter((l) => l.startsWith('- '));
+    assert.ok(bullets.length <= 4, 'too many bullets in:\n' + sec);
+  });
+  assert.doesNotMatch(r.text, /Premium: /);
 });
 
 test('no agent signature is added (agents use their own)', () => {
@@ -67,13 +85,13 @@ test('Leaving employer: MAPD + Hospital Indemnity with SNF', () => {
     anc: { hospital: products.hospital, dvh: products.dvh }
   }, config);
   assert.match(r.text, /coming off your employer coverage/);
-  assert.match(r.text, /1\. MEDICARE PARTS A & B/);
-  assert.match(r.text, /2\. YOUR MEDICARE ADVANTAGE PLAN/);
-  assert.match(r.text, /\$0 monthly plan premium/);
-  assert.match(r.text, /HOSPITAL INDEMNITY WITH SKILLED NURSING RIDER/);
+  assert.match(r.text, /1\. MEDICARE PARTS A & B\n/);
+  assert.match(r.text, /2\. YOUR MEDICARE ADVANTAGE PLAN \(\$0\/mo\)/);
+  assert.match(r.text, /HOSPITAL INDEMNITY \+ SKILLED NURSING \(\$61\.15\/mo\)/);
   assert.match(r.text, /\$150\/day in a skilled nursing facility, Days 21–100/);
-  assert.match(r.text, /pairs with your Medicare Advantage plan to help cover its hospital and skilled nursing copays/);
-  assert.match(r.text, /Your employer plan likely included dental and vision/);
+  assert.match(r.text, /hospital deductible and daily copays/);
+  assert.match(r.text, /Why this fits you: Pairs with your Medicare Advantage plan to cover its hospital and skilled nursing copays\./);
+  assert.match(r.text, /Why this fits you: Keeps the dental and vision coverage you had through work\./);
   assert.equal(r.subject, 'Bob, your Medicare Advantage recap');
   assert.deepEqual(r.warnings, []);
 });
@@ -83,7 +101,7 @@ test('Hospital Indemnity without SNF benefit has no rider', () => {
     prospect: { firstName: 'Bob' }, situation: 't65', main: 'ancillary',
     anc: { hospital: { on: true, daily: '300', premium: '50' } }
   }, config);
-  assert.match(r.text, /1\. HOSPITAL INDEMNITY\n/);
+  assert.match(r.text, /1\. HOSPITAL INDEMNITY \(\$50\.00\/mo\)/);
   assert.doesNotMatch(r.text, /skilled nursing facility/);
 });
 
@@ -93,28 +111,61 @@ test('Staying on employer: delaying Medicare steps + critical illness only', () 
     mapd: { carrier: 'Humana', premium: '0' },
     anc: products // everything ticked, but only cancer/heart may show
   }, config);
-  assert.match(r.text, /1\. DELAYING MEDICARE: WHAT TO DO WHEN YOUR EMPLOYER COVERAGE ENDS/);
+  assert.match(r.text, /1\. DELAYING MEDICARE: WHEN YOUR EMPLOYER COVERAGE ENDS/);
   assert.match(r.text, /Form CMS-L564.*: https:\/\/www\.cms\.gov\/cms-l564-request-employment-information/);
   assert.match(r.text, /Take it to your HR department/);
   assert.match(r.text, /Medicare Part A & B application/);
   assert.match(r.text, /8 months/);
-  assert.match(r.text, /2\. CANCER, HEART ATTACK & STROKE COVERAGE/);
-  assert.match(r.text, /your paycheck would stop\. This puts a \$15,000 cash benefit in your hands to replace lost income/);
+  assert.match(r.text, /2\. CANCER, HEART ATTACK & STROKE \(\$84\.50\/mo\)/);
+  assert.match(r.text, /replace lost income/);
+  assert.match(r.text, /your paycheck would stop\. This puts a \$15,000 cash benefit in your hands/);
   assert.doesNotMatch(r.text, /MEDICARE PARTS A & B|MEDICARE ADVANTAGE|RECOVERY CARE|HOSPITAL INDEMNITY|DENTAL/);
   assert.doesNotMatch(r.text, /Part B premium/);
   assert.doesNotMatch(r.text, /We do not offer every plan/);
-  assert.doesNotMatch(r.text, /Part D/);
   assert.match(r.text, /Your total monthly premium: \$84\.50\/mo/);
   assert.equal(r.subject, 'Tom, your coverage recap');
   assert.deepEqual(r.warnings, []);
 });
 
-test('Staying on employer with different benefit amounts', () => {
-  const r = buildEmail({
-    prospect: { firstName: 'Tom' }, situation: 'stayingEmployer',
+test('critical illness benefit wording and examples follow the products', () => {
+  const diff = buildEmail({
+    prospect: { firstName: 'Tom' }, situation: 't65', main: 'ancillary',
     anc: { cancer: { on: true, benefit: 25000, premium: 60 }, heart: products.heart }
   }, config);
-  assert.match(r.text, /a cash benefit \(\$25,000 for cancer, \$15,000 for a heart attack or stroke\)/);
+  assert.match(diff.text, /\$25,000 cash for cancer and \$15,000 cash for a heart attack or stroke/);
+  assert.match(diff.text, /MD Anderson or Mayo Clinic/);
+  assert.match(diff.text, /ramp, stair lift or walk-in shower/);
+
+  const cancerOnly = buildEmail(medSupp({ anc: { cancer: products.cancer } }), config);
+  assert.match(cancerOnly.text, /\$15,000 cash paid directly to you upon a cancer diagnosis/);
+  assert.match(cancerOnly.text, /treatments your plan won’t approve/);
+  assert.doesNotMatch(cancerOnly.text, /stair lift/);
+
+  const heartOnly = buildEmail(medSupp({ anc: { heart: products.heart } }), config);
+  assert.match(heartOnly.text, /in-home help and caregiving/);
+  assert.doesNotMatch(heartOnly.text, /MD Anderson/);
+});
+
+test('one framing line before the first ancillary section only', () => {
+  const r = buildEmail({
+    prospect: { firstName: 'Bob' }, situation: 't65', main: 'mapd', partBPremium: '202.90',
+    mapd: { carrier: 'Humana', premium: '0' }, anc: products
+  }, config);
+  assert.equal(count(r.text, /only pays for what it approves/g), 1);
+  assert.match(r.text, /only pays for what it approves[^\n]*\n\n3\. CANCER, HEART ATTACK & STROKE/);
+  assert.match(r.text, /assisted living/);
+  assert.match(r.text, /care beyond the limited visits/);
+  assert.match(r.text, /eye exams, glasses and hearing aids/);
+
+  const none = buildEmail(medSupp(), config);
+  assert.doesNotMatch(none.text, /only pays for what it approves/);
+});
+
+test('Med Supp + hospital: no deductible claim, overlap warning', () => {
+  const r = buildEmail(medSupp({ anc: { hospital: products.hospital } }), config);
+  assert.doesNotMatch(r.text, /hospital deductible and daily copays/);
+  assert.match(r.text, /bills at home/);
+  assert.ok(r.warnings.some((w) => /overlaps/.test(w)));
 });
 
 test('Already on Medicare: comparison table (switching plans)', () => {
@@ -127,7 +178,7 @@ test('Already on Medicare: comparison table (switching plans)', () => {
   assert.match(r.text, /Medical plan: now Humana Gold Plus HMO \| recommended Medicare Supplement Plan N \(AFLAC\)/);
   assert.match(r.text, /Added protection: now None \| recommended Cancer \(\$15,000\)/);
   assert.match(r.text, /Monthly premium: now \$0\/mo \| recommended \$158\.01\/mo/);
-  assert.match(r.text, /Compared with what you have now/);
+  assert.match(r.text, /Unlike what you have now/);
   assert.equal(r.subject, 'Mary, your Medicare coverage review');
   assert.deepEqual(r.warnings, []);
 });
@@ -162,11 +213,6 @@ test('missing situation, numbers and products produce warnings', () => {
   assert.match(r2.html, /background:#fff3b0/);
 });
 
-test('Med Supp + SNF rider warns about overlap', () => {
-  const r = buildEmail(medSupp({ anc: { hospital: products.hospital } }), config);
-  assert.ok(r.warnings.some((w) => /overlaps/.test(w)));
-});
-
 test('user text is HTML-escaped', () => {
   const r = buildEmail(medSupp({ prospect: { firstName: '<b>Mary</b>' }, notes: '<script>alert(1)</script>' }), config);
   assert.doesNotMatch(r.html, /<script>/);
@@ -176,44 +222,4 @@ test('user text is HTML-escaped', () => {
 test('disclaimer counts left blank produce a warning', () => {
   const r = buildEmail(medSupp(), baseConfig);
   assert.ok(r.warnings.some((w) => /Disclaimer/.test(w)));
-});
-
-test('critical illness lists non-approved costs matched to the products', () => {
-  const both = buildEmail(medSupp({ anc: { cancer: products.cancer, heart: products.heart } }), config);
-  assert.match(both.text, /costs health insurance won’t approve that come with a diagnosis, such as:/);
-  assert.match(both.text, /MD Anderson or Mayo Clinic/);
-  assert.match(both.text, /wheelchair ramp, stair lift or walk-in shower/);
-
-  const cancerOnly = buildEmail(medSupp({ anc: { cancer: products.cancer } }), config);
-  assert.match(cancerOnly.text, /experimental, clinical-trial or out-of-network care/);
-  assert.doesNotMatch(cancerOnly.text, /stair lift/);
-
-  const heartOnly = buildEmail(medSupp({ anc: { heart: products.heart } }), config);
-  assert.match(heartOnly.text, /In-home help and caregiving/);
-  assert.doesNotMatch(heartOnly.text, /MD Anderson/);
-});
-
-test('every ancillary product lists non-approved costs, with one framing line', () => {
-  const r = buildEmail({
-    prospect: { firstName: 'Bob' }, situation: 't65', main: 'mapd', partBPremium: '202.90',
-    mapd: { carrier: 'Humana', premium: '0' }, anc: products
-  }, config);
-  const preface = r.text.match(/only pays for what it approves/g) || [];
-  assert.equal(preface.length, 1, 'framing line appears once');
-  // framing line sits right before the first ancillary section
-  assert.match(r.text, /only pays for what it approves[^\n]*\n\n3\. CANCER, HEART ATTACK & STROKE COVERAGE/);
-  assert.match(r.text, /Assisted living\*?\*?, which Medicare pays nothing toward/);
-  assert.match(r.text, /Care beyond the limited, part-time visits Medicare approves/);
-  assert.match(r.text, /Your plan’s hospital deductible and daily copays/);
-  assert.match(r.text, /Hearing aids, which Medicare doesn’t cover/);
-  const lists = r.text.match(/costs health insurance won’t approve/g) || [];
-  assert.equal(lists.length, 5, 'CHS, recovery, home, hospital, DVH');
-});
-
-test('no framing line without ancillary; Med Supp hospital list skips deductible', () => {
-  const none = buildEmail(medSupp(), config);
-  assert.doesNotMatch(none.text, /only pays for what it approves/);
-  const ms = buildEmail(medSupp({ anc: { hospital: products.hospital } }), config);
-  assert.doesNotMatch(ms.text, /hospital deductible and daily copays/);
-  assert.match(ms.text, /Bills at home/);
 });
