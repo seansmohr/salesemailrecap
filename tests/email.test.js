@@ -41,7 +41,7 @@ test('T65 Med Supp Plan N matches the template totals', () => {
   assert.match(r.text, /- Cancer: \$41\.85\/mo \(\$15,000 cash if diagnosed\)/);
   assert.match(r.text, /Total monthly cost: \$573\.32\/mo/);
   assert.equal((r.text.match(/Total monthly cost/g) || []).length, 1, 'only one total');
-  assert.match(r.text, /\$202\.90 comes out of your Social Security check\. The other \$370\.42 is paid to your insurance companies\./);
+  assert.doesNotMatch(r.text, /Social Security check/);
   assert.match(r.text, /2\. YOUR MEDICARE SUPPLEMENT: PLAN N \(\$116\.16\/mo\)/);
   assert.match(r.text, /except up to \$20 office copays, \$50 ER copays and rare Part B excess charges/);
   assert.match(r.text, /That’s the gap your Medicare Supplement covers/);

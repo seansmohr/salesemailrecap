@@ -344,25 +344,20 @@
     }
 
     // ----- At a glance -----
-    // One total. Part B is listed as a normal row (first), and a note
-    // under the total splits it into Social Security vs. carriers.
+    // One total. Part B is listed as a normal row (first).
     var allKnown = glance.every(function (g) { return g.amount !== null; });
     var total = allKnown ? round2(glance.reduce(function (a, g) { return a + g.amount; }, 0)) : null;
     var glanceBlock = null;
     if (glance.length) {
       var rows = glance.slice();
       var grand = total;
-      var note = null;
       if (partB) {
         rows.unshift({ label: 'Medicare Part B', detail: 'Covers 80% of doctor costs', text: partB.text });
         grand = total !== null && partB.n !== null ? round2(total + partB.n) : null;
-        note = partB.text + ' comes out of your Social Security check. The other ' +
-          (total !== null ? premiumText(total) : placeholder('total')) + ' is paid to your insurance companies.';
       }
       glanceBlock = {
         rows: rows,
-        totalText: grand !== null ? premiumText(grand) : placeholder('total'),
-        note: note
+        totalText: grand !== null ? premiumText(grand) : placeholder('total')
       };
     }
 
@@ -488,7 +483,7 @@
     if (m.glance) {
       var g = m.glance;
       var amt = 'white-space:nowrap;text-align:right;vertical-align:top;';
-      var tbl = tableOpen('22px 0 6px') + titleRow('Your Coverage at a Glance', 2) +
+      var tbl = tableOpen('22px 0 14px') + titleRow('Your Coverage at a Glance', 2) +
         g.rows.map(function (r) {
           return '<tr><td style="' + cell + '">' +
             '<div style="font-weight:bold;">' + inline(r.label) + '</div>' +
@@ -499,7 +494,6 @@
         '<td align="right" style="' + cell + amt + 'background:' + C.navy + ';color:#ffffff;font-weight:bold;font-size:18px;">' + inline(g.totalText) + '/mo</td></tr>' +
         '</table>';
       out.push(tbl);
-      if (g.note) out.push('<p style="' + FONT + 'margin:0 0 14px;font-size:14px;color:' + C.muted + ';">' + inline(g.note) + '</p>');
     }
 
     if (m.today.length) {
@@ -565,7 +559,6 @@
         out.push('- ' + plain(r.label) + ': ' + plain(r.text) + '/mo' + (r.detail ? ' (' + plain(r.detail) + ')' : ''));
       });
       out.push('Total monthly cost: ' + plain(g.totalText) + '/mo');
-      if (g.note) out.push(plain(g.note));
       out.push('');
     }
     if (m.today.length) {
