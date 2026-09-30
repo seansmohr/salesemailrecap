@@ -12,6 +12,7 @@
     // Medicare figures
     partBPremium: 202.9,
     partBDeductible: 283,
+    highDeductibleG: 2950, // High-Deductible Plan G yearly deductible (CMS)
 
     // Recovery Care / Skilled Nursing policy structure
     recoveryCare: { startDay: 101, consecutiveDays: 360, lifetimeDays: 720 },

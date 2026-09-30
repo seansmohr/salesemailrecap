@@ -195,36 +195,48 @@
       });
     }
 
-    // ----- Medicare Supplement -----
+    // ----- Medicare Supplement (Plan G, High-Deductible G, Plan N) -----
+    var hdg = false, hdgText = '';
     if (main === 'medsupp') {
       var s = d.medsupp || {};
-      var letter = s.plan === 'N' ? 'N' : 'G';
+      var plan = s.plan === 'N' || s.plan === 'HDG' ? s.plan : 'G';
+      hdg = plan === 'HDG';
+      hdgText = money(cfg.highDeductibleG);
+      var planName = hdg ? 'High-Deductible Plan G' : 'Plan ' + plan;
       var sPrem = needPremium(s.premium, 'Medicare Supplement');
       var carrier = str(s.carrier);
       if (!carrier) warnings.push('Medicare Supplement: enter the carrier.');
-      tokens.medsuppCoverage = letter === 'G'
-        ? 'Plan G pays the rest of your approved costs'
-        : 'Plan N covers your approved costs aside from small copays';
-      mainLabel = 'Medicare Supplement Plan ' + letter + (carrier ? ' (' + carrier + ')' : '');
+      tokens.medsuppCoverage = plan === 'N'
+        ? 'Plan N covers your approved costs aside from small copays'
+        : 'Plan G pays the rest of your approved costs';
+      mainLabel = 'Medicare Supplement ' + planName + (carrier ? ' (' + carrier + ')' : '');
       glance.push({
         label: mainLabel,
-        detail: letter === 'G'
-          ? 'Pays the rest of your approved costs after the ' + deductibleText + ' deductible'
+        detail: hdg ? 'Pays the rest of your approved costs after a ' + hdgText + ' yearly deductible'
+          : plan === 'G' ? 'Pays the rest of your approved costs after the ' + deductibleText + ' deductible'
           : 'Pays your approved costs after the ' + deductibleText + ' deductible, minus small copays',
         amount: sPrem.n, text: sPrem.text
       });
+      var sBullets = hdg
+        ? [
+            'You pay Medicare-approved costs up to a **' + hdgText + ' yearly deductible** (it includes the ' + deductibleText + ' Part B deductible). After that, it pays the rest for the year.',
+            '**Same coverage as Plan G** once the deductible is met, for a lower monthly premium'
+          ]
+        : [
+            plan === 'G'
+              ? 'After the ' + deductibleText + ' Part B deductible, pays the rest of your Medicare-approved costs'
+              : 'After the ' + deductibleText + ' Part B deductible, covers your Medicare-approved costs except up to $20 office copays, $50 ER copays and rare Part B excess charges'
+          ];
+      sBullets.push('See any doctor in the U.S. who accepts Medicare. No networks, no referrals.');
+      sBullets.push('Prescriptions aren’t included, so it’s paired with a Part D drug plan');
       sections.push({
-        title: 'Your Medicare Supplement: Plan ' + letter,
+        title: 'Your Medicare Supplement: ' + planName,
         price: sPrem.text,
         subtitle: carrier || placeholder('carrier'),
-        bullets: [
-          letter === 'G'
-            ? 'After the ' + deductibleText + ' Part B deductible, pays the rest of your Medicare-approved costs'
-            : 'After the ' + deductibleText + ' Part B deductible, covers your Medicare-approved costs except up to $20 office copays, $50 ER copays and rare Part B excess charges',
-          'See any doctor in the U.S. who accepts Medicare. No networks, no referrals.',
-          'Prescriptions aren’t included, so it’s paired with a Part D drug plan'
-        ],
-        why: whyFor('medsupp')
+        bullets: sBullets,
+        why: whyFor('medsupp', hdg
+          ? ['A lower premium every month, and your yearly costs for Medicare-approved care are capped at ' + hdgText + '.']
+          : [])
       });
     }
 
@@ -319,14 +331,17 @@
       var hib = [];
       if (snfDaily !== null) {
         hib.push('**' + money(snfDaily) + '/day in a skilled nursing facility**, Days ' + cfg.hospitalSnf.startDay + '–' + cfg.hospitalSnf.endDay + ', when Medicare charges a daily copay');
-        if (main === 'medsupp') {
+        if (main === 'medsupp' && !hdg) {
           warnings.push('Heads up: Medicare Supplement plans G and N already pay the skilled nursing copay for Days 21–100, so the SNF rider overlaps. The email still includes it.');
         }
       }
-      // Med Supp G/N already pay the hospital deductible and copays.
-      hib.push(main === 'medsupp'
-        ? 'Pays for **bills at home** that keep coming while you’re in the hospital'
-        : 'Pays for your plan’s **hospital deductible and daily copays**');
+      // Med Supp G/N already pay the hospital deductible and copays;
+      // with High-Deductible G, the cash goes toward the plan deductible.
+      hib.push(hdg
+        ? 'Helps pay your **' + hdgText + ' Plan G deductible** if you’re hospitalized'
+        : main === 'medsupp'
+          ? 'Pays for **bills at home** that keep coming while you’re in the hospital'
+          : 'Pays for your plan’s **hospital deductible and daily copays**');
       glance.push({
         label: 'Hospital Indemnity',
         detail: hiDaily.text + '/day in the hospital' + (snfDaily !== null ? ', ' + money(snfDaily) + '/day in skilled nursing' : ''),
@@ -339,6 +354,7 @@
         bullets: hib,
         why: whyFor('hospital', main === 'mapd'
           ? ['Pairs with your Medicare Advantage plan to cover its hospital' + (snfDaily !== null ? ' and skilled nursing' : '') + ' copays.']
+          : hdg ? ['Pairs with your High-Deductible Plan G to help cover the deductible.']
           : [])
       });
     }

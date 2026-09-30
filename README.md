@@ -40,7 +40,7 @@ added when a Medicare Advantage or Medicare Supplement plan is included.
 
 Everything an admin is likely to change lives in **`js/config.js`**:
 
-- `partBPremium`, `partBDeductible`: update each year
+- `partBPremium`, `partBDeductible`, `highDeductibleG`: update each year
 - `recoveryCare`: benefit start day and consecutive/lifetime days
 - `hospitalSnf`: SNF rider days (21–100)
 - `cmsL564Url`: link to Form CMS-L564

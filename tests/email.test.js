@@ -260,3 +260,25 @@ test('Why-now box only appears for too early for Medicare', () => {
   const r = buildEmail(medSupp({ anc: { cancer: products.cancer } }), config);
   assert.doesNotMatch(r.text, /Why now/);
 });
+
+test('High-Deductible Plan G', () => {
+  const r = buildEmail(medSupp({
+    medsupp: { plan: 'HDG', carrier: 'Aflac', premium: '52.10' },
+    anc: { hospital: products.hospital }
+  }), config);
+  assert.match(r.text, /- Medicare Supplement High-Deductible Plan G \(Aflac\): \$52\.10\/mo \(Pays the rest of your approved costs after a \$2,950 yearly deductible\)/);
+  assert.match(r.text, /2\. YOUR MEDICARE SUPPLEMENT: HIGH-DEDUCTIBLE PLAN G \(\$52\.10\/mo\)/);
+  assert.match(r.text, /up to a \$2,950 yearly deductible \(it includes the \$283 Part B deductible\)/);
+  assert.match(r.text, /Same coverage as Plan G/);
+  assert.match(r.text, /open enrollment window/); // T65 situation line still wins
+  // Hospital Indemnity ties to the deductible; no SNF overlap warning
+  assert.match(r.text, /Helps pay your \$2,950 Plan G deductible/);
+  assert.match(r.text, /Why this fits you: Pairs with your High-Deductible Plan G to help cover the deductible\./);
+  assert.ok(!r.warnings.some((w) => /overlaps/.test(w)));
+  assert.deepEqual(r.warnings, []);
+
+  const why = buildEmail(medSupp({ situation: 'onMedicare', current: { plan: 'X', premium: 1 }, medsupp: { plan: 'HDG', carrier: 'Aflac', premium: '52.10' } }), config);
+  assert.match(why.text, /Unlike what you have now/);
+  const lead = buildEmail({ ...medSupp({ medsupp: { plan: 'HDG', carrier: 'Aflac', premium: '52.10' } }), situation: 'leavingEmployer' }, config);
+  assert.match(lead.text, /open enrollment window/);
+});
