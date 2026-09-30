@@ -212,15 +212,23 @@
       mainLabel = 'Medicare Supplement ' + planName + (carrier ? ' (' + carrier + ')' : '');
       glance.push({
         label: mainLabel,
-        detail: hdg ? 'Pays the rest of your approved costs after a ' + hdgText + ' yearly deductible'
+        detail: hdg ? 'Pays 100% once you’ve paid ' + hdgText + ' in a year'
           : plan === 'G' ? 'Pays the rest of your approved costs after the ' + deductibleText + ' deductible'
           : 'Pays your approved costs after the ' + deductibleText + ' deductible, minus small copays',
         amount: sPrem.n, text: sPrem.text
       });
       var sBullets = hdg
         ? [
-            'You pay Medicare-approved costs up to a **' + hdgText + ' yearly deductible** (it includes the ' + deductibleText + ' Part B deductible). After that, it pays the rest for the year.',
-            '**Same coverage as Plan G** once the deductible is met, for a lower monthly premium'
+            // One yearly limit, explained as steps so the two deductibles don't blur.
+            {
+              text: '**One yearly limit: ' + hdgText + '.** Here’s how it works:',
+              sub: [
+                '**Step 1:** You pay the first ' + deductibleText + ' (the Part B deductible). It counts toward your ' + hdgText + '.',
+                '**Step 2:** Then you pay 20% of Medicare-approved costs, and Medicare pays 80%. (If you’re admitted to the hospital, Medicare’s hospital deductible also counts toward your ' + hdgText + '.)',
+                '**Step 3:** Once you’ve paid ' + hdgText + ' in total, the plan pays 100% for the rest of the year.'
+              ]
+            },
+            '**Same coverage as Plan G** once you reach ' + hdgText + ', for a lower monthly premium'
           ]
         : [
             plan === 'G'
@@ -338,7 +346,7 @@
       // Med Supp G/N already pay the hospital deductible and copays;
       // with High-Deductible G, the cash goes toward the plan deductible.
       hib.push(hdg
-        ? 'Helps pay your **' + hdgText + ' Plan G deductible** if you’re hospitalized'
+        ? 'Helps pay toward your **' + hdgText + ' yearly limit** if you’re hospitalized'
         : main === 'medsupp'
           ? 'Pays for **bills at home** that keep coming while you’re in the hospital'
           : 'Pays for your plan’s **hospital deductible and daily copays**');
@@ -354,7 +362,7 @@
         bullets: hib,
         why: whyFor('hospital', main === 'mapd'
           ? ['Pairs with your Medicare Advantage plan to cover its hospital' + (snfDaily !== null ? ' and skilled nursing' : '') + ' copays.']
-          : hdg ? ['Pairs with your High-Deductible Plan G to help cover the deductible.']
+          : hdg ? ['Pairs with your High-Deductible Plan G to help cover your ' + hdgText + ' yearly limit.']
           : [])
       });
     }

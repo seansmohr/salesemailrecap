@@ -266,14 +266,17 @@ test('High-Deductible Plan G', () => {
     medsupp: { plan: 'HDG', carrier: 'Aflac', premium: '52.10' },
     anc: { hospital: products.hospital }
   }), config);
-  assert.match(r.text, /- Medicare Supplement High-Deductible Plan G \(Aflac\): \$52\.10\/mo \(Pays the rest of your approved costs after a \$2,950 yearly deductible\)/);
+  assert.match(r.text, /- Medicare Supplement High-Deductible Plan G \(Aflac\): \$52\.10\/mo \(Pays 100% once you’ve paid \$2,950 in a year\)/);
   assert.match(r.text, /2\. YOUR MEDICARE SUPPLEMENT: HIGH-DEDUCTIBLE PLAN G \(\$52\.10\/mo\)/);
-  assert.match(r.text, /up to a \$2,950 yearly deductible \(it includes the \$283 Part B deductible\)/);
+  assert.match(r.text, /One yearly limit: \$2,950\. Here’s how it works:/);
+  assert.match(r.text, /Step 1: You pay the first \$283 \(the Part B deductible\)\. It counts toward your \$2,950\./);
+  assert.match(r.text, /Step 2: Then you pay 20% of Medicare-approved costs, and Medicare pays 80%\./);
+  assert.match(r.text, /Step 3: Once you’ve paid \$2,950 in total, the plan pays 100% for the rest of the year\./);
   assert.match(r.text, /Same coverage as Plan G/);
   assert.match(r.text, /open enrollment window/); // T65 situation line still wins
   // Hospital Indemnity ties to the deductible; no SNF overlap warning
-  assert.match(r.text, /Helps pay your \$2,950 Plan G deductible/);
-  assert.match(r.text, /Why this fits you: Pairs with your High-Deductible Plan G to help cover the deductible\./);
+  assert.match(r.text, /Helps pay toward your \$2,950 yearly limit if you’re hospitalized/);
+  assert.match(r.text, /Why this fits you: Pairs with your High-Deductible Plan G to help cover your \$2,950 yearly limit\./);
   assert.ok(!r.warnings.some((w) => /overlaps/.test(w)));
   assert.deepEqual(r.warnings, []);
 
