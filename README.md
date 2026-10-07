@@ -33,8 +33,7 @@ The email ends with "Best regards," so your own email signature follows it.
 | Too early for Medicare | All ancillary products (no main coverage) | "Getting Ready for Medicare" (enrollment window, Part B penalty), a "Why now" box (qualify while young and healthy, lock in the price), then the products |
 
 Every email has **Your Coverage at a Glance** (premiums and totals), **Where You Are Today**,
-and numbered product sections with a **Why this fits you** box. The Medicare disclaimer is
-added when a Medicare Advantage or Medicare Supplement plan is included.
+and numbered product sections with a **Why this fits you** box.
 
 ## Updating figures and wording
 
@@ -45,8 +44,8 @@ Everything an admin is likely to change lives in **`js/config.js`**:
 - `recoveryCare`: benefit start day and consecutive/lifetime days
 - `hospitalSnf`: SNF rider days (21–100)
 - `cmsL564Url`: link to Form CMS-L564
-- `disclaimer`: **fill in `organizations` and `plans`** (the page warns until you do);
-  have your compliance contact confirm the wording
+- `disclaimer`: turned off (`show: false`). Set `show: true` and fill in `organizations` and `plans`
+  to add the TPMO disclaimer to Medicare Advantage and Med Supp emails
 - `situations`: the "Where You Are Today" paragraph and situation-specific
   "Why this fits you" lines
 - `defaultWhy`: the standard "Why this fits you" line for each product

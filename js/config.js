@@ -28,10 +28,11 @@
     // Official page for Form CMS-L564 (used in the "staying on employer" email)
     cmsL564Url: 'https://www.cms.gov/cms-l564-request-employment-information',
 
-    // Required TPMO disclaimer (shown on Medicare Advantage and Med Supp emails).
-    // Fill in the counts below — the page warns the agent until you do.
-    // Have your FMO / compliance contact confirm the final wording.
+    // TPMO disclaimer. Turned off (show: false). To turn it back on for
+    // Medicare Advantage and Med Supp emails, set show: true and fill in the
+    // counts below (the page warns the agent until you do).
     disclaimer: {
+      show: false,
       organizations: '',
       plans: '',
       text:

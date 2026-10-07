@@ -466,7 +466,7 @@
 
     // ----- Disclaimer -----
     var disclaimer = null;
-    if (main === 'mapd' || main === 'medsupp') {
+    if (cfg.disclaimer.show && (main === 'mapd' || main === 'medsupp')) {
       var orgs = str(cfg.disclaimer.organizations), plans = str(cfg.disclaimer.plans);
       if (!orgs || !plans) warnings.push('Disclaimer: set the number of organizations and products you represent in js/config.js.');
       disclaimer = fill(cfg.disclaimer.text, {

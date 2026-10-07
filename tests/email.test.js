@@ -3,10 +3,11 @@ const assert = require('node:assert/strict');
 const { buildEmail } = require('../js/email.js');
 const baseConfig = require('../js/config.js');
 
-// Config with the disclaimer counts filled in, so tests can check for zero warnings.
+// Config with the disclaimer turned on and its counts filled in, so tests
+// cover the disclaimer and can check for zero warnings.
 const config = {
   ...baseConfig,
-  disclaimer: { ...baseConfig.disclaimer, organizations: '8', plans: '40' }
+  disclaimer: { ...baseConfig.disclaimer, show: true, organizations: '8', plans: '40' }
 };
 
 const products = {
@@ -223,9 +224,17 @@ test('user text is HTML-escaped', () => {
   assert.match(r.html, /&lt;script&gt;/);
 });
 
-test('disclaimer counts left blank produce a warning', () => {
-  const r = buildEmail(medSupp(), baseConfig);
+test('disclaimer is off by default: not shown, no warning', () => {
+  const r = buildEmail(medSupp({ medsupp: { plan: 'G', carrier: 'Aflac', premium: '150' } }), baseConfig);
+  assert.doesNotMatch(r.text, /We do not offer every plan/);
+  assert.ok(!r.warnings.some((w) => /Disclaimer/.test(w)));
+});
+
+test('disclaimer turned on with counts left blank produces a warning', () => {
+  const on = { ...baseConfig, disclaimer: { ...baseConfig.disclaimer, show: true } };
+  const r = buildEmail(medSupp(), on);
   assert.ok(r.warnings.some((w) => /Disclaimer/.test(w)));
+  assert.match(r.text, /We do not offer every plan/);
 });
 
 test('Recovery Care is never described as long-term care', () => {
