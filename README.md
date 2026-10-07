@@ -41,6 +41,7 @@ added when a Medicare Advantage or Medicare Supplement plan is included.
 Everything an admin is likely to change lives in **`js/config.js`**:
 
 - `partBPremium`, `partBDeductible`, `highDeductibleG`: update each year
+- `partDOutOfPocketCap`: listed by year (2026: $2,100, 2027: $2,400); the email switches automatically on January 1. Add the next year when CMS announces it.
 - `recoveryCare`: benefit start day and consecutive/lifetime days
 - `hospitalSnf`: SNF rider days (21–100)
 - `cmsL564Url`: link to Form CMS-L564

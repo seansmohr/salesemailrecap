@@ -59,6 +59,16 @@
     });
   }
 
+  // Picks this year's value from a { year: value } table, falling back to
+  // the most recent year listed (or the earliest, if all are in the future).
+  function forYear(table, year) {
+    if (typeof table === 'number') return table;
+    var years = Object.keys(table).map(Number).sort(function (a, b) { return a - b; });
+    var pick = years[0];
+    years.forEach(function (y) { if (y <= year) pick = y; });
+    return table[pick];
+  }
+
   var SITUATIONS = ['t65', 'leavingEmployer', 'stayingEmployer', 'tooEarly', 'onMedicare'];
   var PRODUCTS = ['cancer', 'heart', 'recovery', 'home', 'hospital', 'dvh'];
 
@@ -66,6 +76,8 @@
 
   function buildEmail(input, cfg) {
     var d = input || {};
+    // d.asOf (a date) is only used by tests; the page always uses today.
+    var year = (d.asOf ? new Date(d.asOf) : new Date()).getFullYear();
     var anc = d.anc || {};
     var warnings = [];
 
@@ -236,7 +248,11 @@
               : 'After the ' + deductibleText + ' Part B deductible, covers your Medicare-approved costs except up to $20 office copays, $50 ER copays and rare Part B excess charges'
           ];
       sBullets.push('See any doctor in the U.S. who accepts Medicare. No networks, no referrals.');
-      sBullets.push('Prescriptions aren’t included, so it’s paired with a Part D drug plan');
+      var pdp = d.pdp || {};
+      var pdpOn = !!pdp.on;
+      sBullets.push(pdpOn
+        ? 'Prescriptions aren’t included, so it’s paired with the Part D drug plan below'
+        : 'Prescriptions aren’t included, so it’s paired with a Part D drug plan');
       sections.push({
         title: 'Your Medicare Supplement: ' + planName,
         price: sPrem.text,
@@ -246,6 +262,29 @@
           ? ['A lower premium every month, and your yearly costs for Medicare-approved care are capped at ' + hdgText + '.']
           : [])
       });
+
+      // ----- Part D drug plan (optional, with a Medicare Supplement) -----
+      if (pdpOn) {
+        var pdpName = str(pdp.planName);
+        if (!pdpName) warnings.push('Part D drug plan: enter the plan name.');
+        var pdpPrem = needPremium(pdp.premium, 'Part D drug plan');
+        glance.push({
+          label: 'Part D Drug Plan' + (pdpName ? ' (' + pdpName + ')' : ''),
+          detail: 'Covers your prescriptions',
+          amount: pdpPrem.n, text: pdpPrem.text
+        });
+        sections.push({
+          title: 'Your Prescription Drug Plan (Part D)',
+          price: pdpPrem.text,
+          subtitle: pdpName || placeholder('plan name'),
+          bullets: [
+            'Covers your prescriptions, which your Medicare Supplement doesn’t',
+            'Your out-of-pocket costs for covered drugs are capped at **' + money(forYear(cfg.partDOutOfPocketCap, year)) + ' a year**',
+            'We review your drug plan every fall to keep you in the most cost-effective option'
+          ],
+          why: whyFor('pdp')
+        });
+      }
     }
 
     // ----- Cancer / Heart Attack & Stroke (one combined section) -----

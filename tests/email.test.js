@@ -285,3 +285,41 @@ test('High-Deductible Plan G', () => {
   const lead = buildEmail({ ...medSupp({ medsupp: { plan: 'HDG', carrier: 'Aflac', premium: '52.10' } }), situation: 'leavingEmployer' }, config);
   assert.match(lead.text, /open enrollment window/);
 });
+
+test('Med Supp + Part D drug plan', () => {
+  const r = buildEmail(medSupp({
+    medsupp: { plan: 'G', carrier: 'Aflac', premium: '183.45' },
+    pdp: { on: true, planName: 'Wellcare Value Script', premium: '0.40' },
+    anc: { cancer: products.cancer }
+  }), config);
+  assert.match(r.text, /- Part D Drug Plan \(Wellcare Value Script\): \$0\.40\/mo \(Covers your prescriptions\)/);
+  assert.match(r.text, /3\. YOUR PRESCRIPTION DRUG PLAN \(PART D\) \(\$0\.40\/mo\)\nWellcare Value Script/);
+  assert.match(r.text, /capped at \$2,\d00 a year/);
+  assert.match(r.text, /paired with the Part D drug plan below/);
+  assert.match(r.text, /Why this fits you: Your prescriptions are covered, with a yearly cap on what you pay\./);
+  // 202.90 + 183.45 + 0.40 + 41.85
+  assert.match(r.text, /Total monthly cost: \$428\.60\/mo/);
+  assert.match(r.text, /4\. CANCER COVERAGE/);
+  assert.deepEqual(r.warnings, []);
+});
+
+test('Part D drug plan: missing fields warn; ignored unless Med Supp', () => {
+  const r = buildEmail(medSupp({ pdp: { on: true } }), config);
+  assert.ok(r.warnings.some((w) => /Part D drug plan: enter the plan name/.test(w)));
+  assert.ok(r.warnings.some((w) => /Part D drug plan: enter the monthly premium/.test(w)));
+
+  const mapd = buildEmail({
+    prospect: { firstName: 'Bob' }, situation: 't65', main: 'mapd', partBPremium: '202.90',
+    mapd: { carrier: 'Humana', premium: '0' },
+    pdp: { on: true, planName: 'Wellcare', premium: '5' }
+  }, config);
+  assert.doesNotMatch(mapd.text, /Part D Drug Plan|PRESCRIPTION DRUG PLAN/);
+});
+
+test('Part D cap switches to the 2027 figure on January 1, 2027', () => {
+  const base = medSupp({ pdp: { on: true, planName: 'Wellcare', premium: '1' } });
+  const cap = (asOf) => buildEmail({ ...base, asOf }, config).text.match(/capped at (\$[\d,]+) a year/)[1];
+  assert.equal(cap('2026-12-31T12:00:00'), '$2,100');
+  assert.equal(cap('2027-01-01T12:00:00'), '$2,400');
+  assert.equal(cap('2028-06-01T12:00:00'), '$2,400'); // keeps latest until 2028 is added
+});

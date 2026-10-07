@@ -13,6 +13,11 @@
     partBPremium: 202.9,
     partBDeductible: 283,
     highDeductibleG: 2950, // High-Deductible Plan G yearly deductible (CMS)
+    // Part D yearly out-of-pocket cap for covered drugs (CMS), by calendar
+    // year. The email uses the current year's figure automatically, so 2027
+    // takes over on January 1, 2027. Add next year's figure when CMS
+    // announces it (each April).
+    partDOutOfPocketCap: { 2026: 2100, 2027: 2400 },
 
     // Recovery Care / Skilled Nursing policy structure
     recoveryCare: { startDay: 101, consecutiveDays: 360, lifetimeDays: 720 },
@@ -85,6 +90,7 @@
     defaultWhy: {
       mapd: 'One plan for doctors, hospital and prescriptions, with a yearly cap on what you pay.',
       medsupp: 'Predictable costs: after the {partBDeductible} Part B deductible, {medsuppCoverage}.',
+      pdp: 'Your prescriptions are covered, with a yearly cap on what you pay.',
       critical: 'If a diagnosis ever comes, {ciCash} lands in your hands to use however you need.',
       recovery: "If your recovery takes longer than Medicare covers, the cost won't come out of your savings.",
       home: 'You recover at home instead of a facility, without worrying about the bill.',
